@@ -96,7 +96,9 @@ if ! $has_device_arg; then
     if [[ $mode == prod && $platform == ios ]]; then
       echo "✗ Chế độ prod (release) không chạy được trên iOS Simulator, cần iPhone thật." >&2; exit 1
     fi
-    pick=$(printf '%s\n' "$devices" | head -1)
+    # Prefer an iPhone simulator over iPad ones.
+    pick=$(printf '%s\n' "$devices" | awk -F'\t' '$3 ~ /iPhone/' | head -1)
+    [[ -z $pick ]] && pick=$(printf '%s\n' "$devices" | head -1)
   fi
   echo "→ Thiết bị: $(cut -f3 <<<"$pick") ($(cut -f1 <<<"$pick"))"
   extra=(-d "$(cut -f1 <<<"$pick")" "${extra[@]}")
