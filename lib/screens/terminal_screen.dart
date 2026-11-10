@@ -430,25 +430,12 @@ class _TerminalScreenState extends State<TerminalScreen> {
 
   Future<String?> _askPassword(Host host) async {
     if (!mounted) return null;
-    final ctl = TextEditingController();
-    final pw = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('Password cho ${host.address}'),
-        content: TextField(
-          controller: ctl,
-          obscureText: true,
-          autofocus: true,
-          onSubmitted: (v) => Navigator.pop(ctx, v),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Huỷ')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, ctl.text), child: const Text('Kết nối')),
-        ],
-      ),
+    return showTextInputDialog(
+      context,
+      title: 'Password cho ${host.address}',
+      confirmText: 'Kết nối',
+      obscure: true,
     );
-    ctl.dispose();
-    return pw;
   }
 
   // ----------------------------------------------------------------- UI

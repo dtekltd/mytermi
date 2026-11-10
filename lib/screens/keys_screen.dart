@@ -115,24 +115,14 @@ Future<SshKey?> importKeyFlow(BuildContext context, HostStore store) =>
 
 /// Ask for a name, generate an Ed25519 key, save it and show its public key.
 Future<SshKey?> generateKeyFlow(BuildContext context, HostStore store) async {
-  final name = TextEditingController(text: 'mytermi');
-  final label = await showDialog<String>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Tạo key ED25519 mới'),
-      content: TextField(
-        controller: name,
-        autofocus: true,
-        decoration: const InputDecoration(labelText: 'Tên key', hintText: 'VD: iphone-cua-toi'),
-        onSubmitted: (v) => Navigator.pop(ctx, v),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Huỷ')),
-        FilledButton(onPressed: () => Navigator.pop(ctx, name.text), child: const Text('Tạo')),
-      ],
-    ),
+  final label = await showTextInputDialog(
+    context,
+    title: 'Tạo key ED25519 mới',
+    confirmText: 'Tạo',
+    initialText: 'mytermi',
+    labelText: 'Tên key',
+    hintText: 'VD: iphone-cua-toi',
   );
-  name.dispose();
   if (label == null) return null;
   final pem = generateEd25519Pem(label.trim());
   final key = await store.addKey(label: label, pem: pem);

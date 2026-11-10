@@ -214,3 +214,71 @@ class EmptyState extends StatelessWidget {
     );
   }
 }
+
+/// Dialog with one text field. Returns the text, or null if cancelled.
+/// The controller lives in the dialog's State so it's only disposed after the
+/// close animation (disposing it right after `showDialog` returns crashes).
+Future<String?> showTextInputDialog(
+  BuildContext context, {
+  required String title,
+  required String confirmText,
+  String initialText = '',
+  String? labelText,
+  String? hintText,
+  bool obscure = false,
+}) =>
+    showDialog<String>(
+      context: context,
+      builder: (_) => _TextInputDialog(
+        title: title,
+        confirmText: confirmText,
+        initialText: initialText,
+        labelText: labelText,
+        hintText: hintText,
+        obscure: obscure,
+      ),
+    );
+
+class _TextInputDialog extends StatefulWidget {
+  const _TextInputDialog({
+    required this.title,
+    required this.confirmText,
+    required this.initialText,
+    this.labelText,
+    this.hintText,
+    required this.obscure,
+  });
+  final String title, confirmText, initialText;
+  final String? labelText, hintText;
+  final bool obscure;
+
+  @override
+  State<_TextInputDialog> createState() => _TextInputDialogState();
+}
+
+class _TextInputDialogState extends State<_TextInputDialog> {
+  late final _ctl = TextEditingController(text: widget.initialText);
+
+  @override
+  void dispose() {
+    _ctl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: Text(widget.title),
+        content: TextField(
+          controller: _ctl,
+          obscureText: widget.obscure,
+          autofocus: true,
+          autocorrect: !widget.obscure,
+          decoration: InputDecoration(labelText: widget.labelText, hintText: widget.hintText),
+          onSubmitted: (v) => Navigator.pop(context, v),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Huỷ')),
+          FilledButton(onPressed: () => Navigator.pop(context, _ctl.text), child: Text(widget.confirmText)),
+        ],
+      );
+}
