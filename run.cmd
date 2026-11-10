@@ -50,7 +50,27 @@ if /i "%PLATFORM%"=="ios" (
   exit /b 1
 )
 
-rem --- locate flutter ---
+rem --- locate flutter: project pins its version in .fvmrc, use it via FVM if installed ---
+if not exist ".fvmrc" goto nofvm
+where fvm >nul 2>nul
+if errorlevel 1 goto nofvm
+set "FVMVER="
+for /f "usebackq tokens=*" %%V in (`powershell -NoProfile -Command "(Get-Content .fvmrc -Raw | ConvertFrom-Json).flutter"`) do set "FVMVER=%%V"
+set "FVMSDK=%FVM_CACHE_PATH%"
+if not defined FVMSDK set "FVMSDK=%LOCALAPPDATA%\fvm"
+set "FVMSDK=%FVMSDK%\versions\%FVMVER%"
+if exist ".fvm\flutter_sdk\bin\flutter.bat" set "FVMSDK=%CD%\.fvm\flutter_sdk"
+if not exist "%FVMSDK%\bin\flutter.bat" (
+  echo ... Cai Flutter %FVMVER% qua FVM ^(lan dau^)
+  call fvm install %FVMVER%
+)
+if not exist "%FVMSDK%\bin\flutter.bat" (
+  echo X Khong tim thay Flutter %FVMVER% cua FVM o %FVMSDK%
+  exit /b 1
+)
+set "PATH=%FVMSDK%\bin;%PATH%"
+goto found
+:nofvm
 where flutter >nul 2>nul
 if errorlevel 1 (
   for %%D in ("%FLUTTER_ROOT%" "%USERPROFILE%\sdk\flutter" "%USERPROFILE%\flutter" "C:\flutter" "C:\src\flutter") do (

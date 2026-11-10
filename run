@@ -34,6 +34,22 @@ done
 extra=("$@")
 
 # --- locate flutter / android sdk -------------------------------------------
+# Project pins its Flutter version in .fvmrc; use it via FVM when available.
+if [[ -f .fvmrc ]] && command -v fvm >/dev/null 2>&1; then
+  fvm_ver=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc | head -1)
+  fvm_sdk="${FVM_CACHE_PATH:-$HOME/fvm}/versions/$fvm_ver"
+  if [[ -x .fvm/flutter_sdk/bin/flutter ]]; then
+    fvm_sdk="$PWD/.fvm/flutter_sdk"
+  elif [[ ! -x $fvm_sdk/bin/flutter ]]; then
+    echo "… Cài Flutter $fvm_ver qua FVM (lần đầu)"
+    fvm install "$fvm_ver"
+  fi
+  if [[ -x $fvm_sdk/bin/flutter ]]; then
+    export PATH="$fvm_sdk/bin:$PATH"
+  else
+    echo "✗ Không tìm thấy Flutter $fvm_ver của FVM ở $fvm_sdk" >&2; exit 1
+  fi
+fi
 if ! command -v flutter >/dev/null 2>&1; then
   for d in "${FLUTTER_ROOT:-}" "$HOME/sdk/flutter" "$HOME/flutter" "$HOME/development/flutter"; do
     if [[ -n "$d" && -x "$d/bin/flutter" ]]; then export PATH="$d/bin:$PATH"; break; fi

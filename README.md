@@ -2,6 +2,12 @@
 
 SSH client for iOS / Android built with Flutter (dartssh2 + xterm), styled after Termius.
 
+## Flutter version
+
+The project is pinned to Flutter **3.47.9** in `.fvmrc`. If [FVM](https://fvm.app) is installed, `run` uses that version automatically (installing it on first run) without touching your global Flutter. Without FVM, `run` uses the `flutter` on your PATH.
+
+For the IDE / manual commands, run `fvm use` once in the project (creates `.fvm/flutter_sdk`) and use `fvm flutter ...`.
+
 ## Run / build
 
 ```sh
