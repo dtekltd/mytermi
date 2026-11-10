@@ -1,17 +1,24 @@
-# mytermi
+# MyTermi
 
-A new Flutter project.
+SSH client for iOS / Android built with Flutter (dartssh2 + xterm), styled after Termius.
 
-## Getting Started
+## Run / build
 
-This project is a starting point for a Flutter application.
+```sh
+./run [dev|prod|build] [ios|android] [extra flutter args...]   # macOS / Linux
+run   [dev|prod|build] [android]     [extra flutter args...]   # Windows (run.cmd)
+```
 
-A few resources to get you started if this is your first Flutter project:
+| Mode    | What it does                                             |
+|---------|----------------------------------------------------------|
+| `dev`   | Debug build with hot reload (default), `APP_ENV=dev`      |
+| `prod`  | Release build run on a device, `APP_ENV=prod`             |
+| `build` | Release package: Android → APK, iOS → IPA                 |
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+- Default platform: macOS → `ios`, Linux/Windows → `android`.
+- A connected device is picked automatically (real device first). Pass `-d <id>` to choose one.
+- On macOS with no iOS device, the Simulator is opened. `prod` needs a real iPhone (release mode can't run on the simulator).
+- `build ios` needs a signing team set in Xcode (`ios/Runner.xcworkspace` → Signing & Capabilities).
+- Any extra arguments are passed to `flutter`, e.g. `./run build android --split-per-abi`.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+The environment is available in code as `appEnv` / `isProd` from `lib/env.dart`.

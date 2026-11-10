@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:xterm/xterm.dart';
 
+import '../env.dart';
 import '../services/app_services.dart';
 import '../services/settings_store.dart';
 import '../theme.dart';
@@ -179,9 +180,13 @@ class SettingsScreen extends StatelessWidget {
             ]),
 
             const SectionLabel('Thông tin'),
-            const _Group(children: [
-              _Tile(icon: Icons.info_outline, title: 'MyTermi', subtitle: 'SSH client · phiên bản 1.0.0'),
+            _Group(children: [
               _Tile(
+                icon: Icons.info_outline,
+                title: 'MyTermi',
+                subtitle: 'SSH client · phiên bản 1.0.0${isProd ? '' : ' · $appEnv'}',
+              ),
+              const _Tile(
                 icon: Icons.font_download_outlined,
                 title: 'Font JetBrains Mono',
                 subtitle: 'SIL Open Font License 1.1',
