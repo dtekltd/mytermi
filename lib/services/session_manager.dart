@@ -27,7 +27,7 @@ class SshSession extends ChangeNotifier {
   SshSession({required this.host, required this.hosts, required this.commands, required this.settings})
       : id = newId() {
     terminal.onOutput = _onTerminalOutput;
-    terminal.onResize = (w, h, pw, ph) => _shell?.resizeTerminal(w, h, pw, ph);
+    terminal.onResize = _onResize;
     terminal.addListener(_onTerminalChanged);
   }
 
@@ -89,8 +89,32 @@ class SshSession extends ChangeNotifier {
     for (final cmd in tracker.feed(out)) {
       _maybeSaveHistory(cmd);
     }
-    shell.write(Uint8List.fromList(utf8.encode(out)));
+    try {
+      shell.write(Uint8List.fromList(utf8.encode(out)));
+    } catch (_) {
+      _shellEnded(shell, 'Mất kết nối.'); // channel closed under us
+      return;
+    }
     refreshSuggestions();
+  }
+
+  // Called from TerminalView's layout, so it must never throw: the channel can
+  // close (exit, server restart) a moment before we hear about it.
+  void _onResize(int w, int h, int pw, int ph) {
+    final shell = _shell;
+    if (shell == null) return;
+    try {
+      shell.resizeTerminal(w, h, pw, ph);
+    } catch (_) {
+      scheduleMicrotask(() => _shellEnded(shell, 'Mất kết nối.'));
+    }
+  }
+
+  /// The remote shell [shell] is gone: drop it (and its client) and show [msg].
+  void _shellEnded(SSHSession shell, String msg) {
+    if (!identical(shell, _shell)) return; // stale: already replaced/closed
+    _close();
+    _onDisconnected(msg);
   }
 
   /// Sends a key (arrows, Tab...) honoring sticky Ctrl/Alt.
@@ -217,10 +241,10 @@ class SshSession extends ChangeNotifier {
         stream.cast<List<int>>().transform(const Utf8Decoder(allowMalformed: true)).listen(terminal.write);
       }
       shell.done.whenComplete(() {
-        if (gen == _gen) _onDisconnected('Phiên đã kết thúc.');
+        if (gen == _gen) _shellEnded(shell, 'Phiên đã kết thúc.');
       });
       client.done.catchError((_) {}).whenComplete(() {
-        if (gen == _gen) _onDisconnected('Mất kết nối.');
+        if (gen == _gen) _shellEnded(shell, 'Mất kết nối.');
       });
 
       tracker.reset();
