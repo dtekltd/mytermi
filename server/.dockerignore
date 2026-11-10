@@ -1,0 +1,6 @@
+bin/
+console/node_modules/
+console/.next/
+console/out/
+internal/console/dist/*
+!internal/console/dist/.gitkeep

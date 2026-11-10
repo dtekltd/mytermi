@@ -1,0 +1,37 @@
+# Local stack: Postgres + MyTermi server (API + console on http://localhost:8080).
+#   docker compose up -d --build
+# First admin: set MYTERMI_ADMIN_EMAIL / MYTERMI_ADMIN_PASSWORD below (or in .env).
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mytermi}
+      POSTGRES_DB: mytermi
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - ./server/scripts/create-test-db.sql:/docker-entrypoint-initdb.d/10-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  server:
+    build: ./server
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MYTERMI_DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-mytermi}@db:5432/mytermi?sslmode=disable
+      MYTERMI_PUBLIC_URL: ${MYTERMI_PUBLIC_URL:-http://localhost:8080}
+      MYTERMI_DEV: ${MYTERMI_DEV:-1} # logs OTP emails until SMTP is configured in the console
+      MYTERMI_ADMIN_EMAIL: ${MYTERMI_ADMIN_EMAIL:-admin@mytermi.local}
+      MYTERMI_ADMIN_PASSWORD: ${MYTERMI_ADMIN_PASSWORD:-change-me-now}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

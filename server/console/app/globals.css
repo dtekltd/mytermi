@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+/* Same palette as the app (green accent on navy / light grey). */
+@theme {
+  --color-accent: #16955e;
+  --color-accent-strong: #11784b;
+  --font-sans: ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "JetBrains Mono", SFMono-Regular, Menlo, monospace;
+}
+
+:root {
+  --bg: #f2f3f8;
+  --surface: #ffffff;
+  --surface-hi: #e5e7f0;
+  --border: #d6d9e4;
+  --text: #1b1e2e;
+  --text-dim: #6a6f8c;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e2133;
+    --surface: #2b2e44;
+    --surface-hi: #383c58;
+    --border: #3f4363;
+    --text: #f2f3f8;
+    --text-dim: #8e92ad;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-hi: var(--surface-hi);
+  --color-line: var(--border);
+  --color-fg: var(--text);
+  --color-dim: var(--text-dim);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+}
