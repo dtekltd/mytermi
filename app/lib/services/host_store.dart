@@ -157,6 +157,35 @@ class HostStore extends ChangeNotifier {
     }
   }
 
+  // ---- sync (apply changes that came from another device) ----
+
+  /// Upserts a host received from sync, keeping its id.
+  Future<void> applySyncedHost(Host host, String? password) async {
+    final i = _hosts.indexWhere((h) => h.id == host.id);
+    i >= 0 ? _hosts[i] = host : _hosts.add(host);
+    await _writeSecret('pw_${host.id}', host.auth == AuthMethod.password ? password : null);
+    await _persist();
+  }
+
+  Future<void> removeHostById(String id) async {
+    final h = _hosts.where((h) => h.id == id).firstOrNull;
+    if (h != null) await delete(h);
+  }
+
+  /// Upserts a key received from sync, keeping its id.
+  Future<void> applySyncedKey(SshKey key, String pem, String? passphrase) async {
+    final i = _keys.indexWhere((k) => k.id == key.id);
+    i >= 0 ? _keys[i] = key : _keys.add(key);
+    await _secure.write(key: 'sk_${key.id}', value: pem);
+    await _writeSecret('skp_${key.id}', passphrase);
+    await _persist();
+  }
+
+  Future<void> removeKeyById(String id) async {
+    final k = keyById(id);
+    if (k != null) await deleteKey(k);
+  }
+
   // ---- known hosts (host key fingerprints, not secret) ----
 
   String _khKey(String hostname, int port) => 'kh_$hostname:$port';

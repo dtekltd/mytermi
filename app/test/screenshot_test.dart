@@ -1,5 +1,6 @@
 // Renders screenshots of the main screens (not part of the normal suite).
 // Run: SCREENSHOTS=1 flutter test test/screenshot_test.dart --update-goldens
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -10,14 +11,16 @@ import 'package:mytermi/models/host.dart';
 import 'package:mytermi/models/snippet.dart';
 import 'package:mytermi/models/ssh_key.dart';
 import 'package:mytermi/screens/host_edit_screen.dart';
+import 'package:mytermi/screens/account_screen.dart';
 import 'package:mytermi/screens/keys_screen.dart';
+import 'package:mytermi/screens/login_screen.dart';
+import 'package:mytermi/screens/vault_screens.dart';
+import 'package:mytermi/services/account_service.dart';
+import 'package:mytermi/services/sync_service.dart';
 import 'package:mytermi/screens/home_screen.dart';
 import 'package:mytermi/screens/terminal_screen.dart';
 import 'package:mytermi/services/app_services.dart';
-import 'package:mytermi/services/command_store.dart';
-import 'package:mytermi/services/host_store.dart';
 import 'package:mytermi/services/session_manager.dart';
-import 'package:mytermi/services/settings_store.dart';
 import 'package:mytermi/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -41,11 +44,7 @@ void main() {
     await _font(monoFont, ['assets/fonts/JetBrainsMono-Regular.ttf', 'assets/fonts/JetBrainsMono-Bold.ttf']);
     SharedPreferences.setMockInitialValues({});
     FlutterSecureStorage.setMockInitialValues({});
-    app = AppServices(
-      hosts: await HostStore.load(),
-      commands: await CommandStore.load(),
-      settings: await SettingsStore.load(),
-    );
+    app = await AppServices.load(startSync: false);
     await app.hosts.save(Host(id: 'h1', label: 'dev1', hostname: '10.0.0.5', username: 'ubuntu'), const HostSecrets());
     final key = await app.hosts.addKey(label: 'iphone', pem: generateEd25519Pem('iphone'));
     await app.hosts.addKey(label: 'macbook', pem: generateEd25519Pem('macbook'));
@@ -99,6 +98,36 @@ void main() {
       await shot(KeysScreen(store: app.hosts), '6_keys');
       await shot(KeyDetailScreen(store: app.hosts, keyId: app.hosts.keys.first.id, justCreated: true), '7_key_detail');
       await shot(HostEditScreen(store: app.hosts, host: app.hosts.hosts.last), '8_host_edit_key');
+    });
+
+    testWidgets('account $mode', skip: !_enabled, (t) async {
+      await phone(t);
+      Future<void> shot(Widget w, String name) async {
+        await t.pumpWidget(MaterialApp(theme: buildTheme(pal), debugShowCheckedModeBanner: false, home: w));
+        await t.pumpAndSettle();
+        await expectLater(find.byType(MaterialApp), matchesGoldenFile('shots/${mode}_$name.png'));
+      }
+
+      await shot(LoginScreen(app: app, config: const ServerConfig(apple: true)), '9_login');
+      await shot(OtpScreen(app: app, email: 'tuan@example.com'), '10_otp');
+      await shot(VaultSetupScreen(app: app), '12_vault_setup');
+      await shot(const RecoveryKeyScreen(recoveryKey: '7Q2M-K9XD-4FTA-ZC81-WE3N-PV6H-R0BJ-5YMS'), '13_recovery');
+      await shot(VaultUnlockScreen(app: app), '14_vault_unlock');
+
+      // Signed-in account page with sync running.
+      SharedPreferences.setMockInitialValues({
+        'acct_me': jsonEncode({
+          'id': 'u1', 'email': 'tuan@example.com', 'name': 'Tuấn', 'has_password': true, 'providers': ['apple'],
+          'plan': {'id': 'free', 'name': 'Free', 'max_devices': 2, 'sync_enabled': true}, 'has_vault': true,
+        }),
+      });
+      FlutterSecureStorage.setMockInitialValues({'acct_refresh': 'x', 'acct_device': 'd'});
+      final signedIn = AppServices(
+        hosts: app.hosts, commands: app.commands, settings: app.settings,
+        account: await AccountService.load(), sync: app.sync,
+      );
+      signedIn.sync.debugSet(phase: SyncPhase.ready, lastSynced: DateTime(2026, 11, 10, 9, 41), synced: 12);
+      await shot(AccountScreen(app: signedIn), '11_account');
     });
 
     testWidgets('terminal $mode', skip: !_enabled, (t) async {

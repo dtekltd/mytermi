@@ -2,18 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'screens/home_screen.dart';
 import 'services/app_services.dart';
-import 'services/command_store.dart';
-import 'services/host_store.dart';
-import 'services/settings_store.dart';
 import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final app = AppServices(
-    hosts: await HostStore.load(),
-    commands: await CommandStore.load(),
-    settings: await SettingsStore.load(),
-  );
+  final app = await AppServices.load();
   runApp(MyTermiApp(app: app));
 }
 

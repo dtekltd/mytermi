@@ -49,11 +49,7 @@ void main() {
   });
 
   testWidgets('app follows OS brightness by default, and the override', (t) async {
-    final app = AppServices(
-      hosts: await HostStore.load(),
-      commands: await CommandStore.load(),
-      settings: await SettingsStore.load(),
-    );
+    final app = await AppServices.load(startSync: false);
     Brightness current() => Theme.of(t.element(find.text('Hosts').first)).brightness;
 
     t.platformDispatcher.platformBrightnessTestValue = Brightness.light;

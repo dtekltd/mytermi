@@ -63,6 +63,10 @@ if [[ $platform == ios && "$(uname -s)" != Darwin ]]; then
 fi
 
 defines=(--dart-define=APP_ENV="$([[ $mode == dev ]] && echo dev || echo prod)")
+# Optional: sync server and Google Sign-In client IDs (see docs/apple-review.md).
+[[ -n ${MYTERMI_API_URL:-} ]] && defines+=(--dart-define=API_URL="$MYTERMI_API_URL")
+[[ -n ${GOOGLE_IOS_CLIENT_ID:-} ]] && defines+=(--dart-define=GOOGLE_IOS_CLIENT_ID="$GOOGLE_IOS_CLIENT_ID")
+[[ -n ${GOOGLE_SERVER_CLIENT_ID:-} ]] && defines+=(--dart-define=GOOGLE_SERVER_CLIENT_ID="$GOOGLE_SERVER_CLIENT_ID")
 
 # --- build --------------------------------------------------------------------
 if [[ $mode == build ]]; then

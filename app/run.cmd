@@ -87,6 +87,8 @@ if errorlevel 1 (
 set "ENV=prod"
 if /i "%MODE%"=="dev" set "ENV=dev"
 set "DEFINES=--dart-define=APP_ENV=%ENV%"
+if defined MYTERMI_API_URL set "DEFINES=%DEFINES% --dart-define=API_URL=%MYTERMI_API_URL%"
+if defined GOOGLE_SERVER_CLIENT_ID set "DEFINES=%DEFINES% --dart-define=GOOGLE_SERVER_CLIENT_ID=%GOOGLE_SERVER_CLIENT_ID%"
 
 if /i "%MODE%"=="build" (
   echo ^> flutter build apk --release %DEFINES%%EXTRA%
