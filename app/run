@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# Run / build MyTermi.
+#
+#   ./run [dev|prod|build] [ios|android] [extra flutter args...]
+#
+#   dev    debug build with hot reload            (default)
+#   prod   release build, run on a device
+#   build  release package: android -> APK, ios -> IPA
+#
+# Platform defaults: macOS -> ios, Linux/Windows -> android.
+# Examples:
+#   ./run                      # dev on default platform
+#   ./run prod android
+#   ./run build ios
+#   ./run build android --split-per-abi
+#   ./run dev android -d emulator-5554   # pick a specific device
+set -eo pipefail
+cd "$(dirname "$0")"
+
+usage() { sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-0}"; }
+
+mode=dev
+case "$(uname -s)" in Darwin) platform=ios ;; *) platform=android ;; esac
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    dev|prod|build) mode=$1 ;;
+    ios|android)    platform=$1 ;;
+    -h|--help|help) usage ;;
+    *) break ;;   # rest goes to flutter
+  esac
+  shift
+done
+extra=("$@")
+
+# --- locate flutter / android sdk -------------------------------------------
+# Project pins its Flutter version in .fvmrc; use it via FVM when available.
+if [[ -f .fvmrc ]] && command -v fvm >/dev/null 2>&1; then
+  fvm_ver=$(sed -n 's/.*"flutter"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' .fvmrc | head -1)
+  fvm_sdk="${FVM_CACHE_PATH:-$HOME/fvm}/versions/$fvm_ver"
+  if [[ -x .fvm/flutter_sdk/bin/flutter ]]; then
+    fvm_sdk="$PWD/.fvm/flutter_sdk"
+  elif [[ ! -x $fvm_sdk/bin/flutter ]]; then
+    echo "… Cài Flutter $fvm_ver qua FVM (lần đầu)"
+    fvm install "$fvm_ver"
+  fi
+  if [[ -x $fvm_sdk/bin/flutter ]]; then
+    export PATH="$fvm_sdk/bin:$PATH"
+  else
+    echo "✗ Không tìm thấy Flutter $fvm_ver của FVM ở $fvm_sdk" >&2; exit 1
+  fi
+fi
+if ! command -v flutter >/dev/null 2>&1; then
+  for d in "${FLUTTER_ROOT:-}" "$HOME/sdk/flutter" "$HOME/flutter" "$HOME/development/flutter"; do
+    if [[ -n "$d" && -x "$d/bin/flutter" ]]; then export PATH="$d/bin:$PATH"; break; fi
+  done
+fi
+command -v flutter >/dev/null 2>&1 || { echo "✗ Không tìm thấy flutter (thêm vào PATH hoặc đặt FLUTTER_ROOT)." >&2; exit 1; }
+if [[ -z "${ANDROID_HOME:-}" && -d "$HOME/sdk/android" ]]; then export ANDROID_HOME="$HOME/sdk/android"; fi
+
+if [[ $platform == ios && "$(uname -s)" != Darwin ]]; then
+  echo "✗ iOS chỉ chạy/build được trên macOS (cần Xcode)." >&2; exit 1
+fi
+
+defines=(--dart-define=APP_ENV="$([[ $mode == dev ]] && echo dev || echo prod)")
+
+# --- build --------------------------------------------------------------------
+if [[ $mode == build ]]; then
+  if [[ $platform == android ]]; then
+    set -x; flutter build apk --release "${defines[@]}" "${extra[@]}"; { set +x; } 2>/dev/null
+    echo "✓ APK: build/app/outputs/flutter-apk/"
+  else
+    set -x; flutter build ipa --release "${defines[@]}" "${extra[@]}"; { set +x; } 2>/dev/null
+    echo "✓ IPA: build/ios/ipa/  (archive: build/ios/archive/Runner.xcarchive)"
+  fi
+  exit 0
+fi
+
+# --- run: pick a device for the platform unless -d was given ---------------------
+has_device_arg=false
+for a in "${extra[@]}"; do [[ $a == -d || $a == --device-id* ]] && has_device_arg=true; done
+
+# Prints "id<TAB>emulator<TAB>name" for each connected device of $platform.
+list_devices() {
+  flutter devices --machine 2>/dev/null | awk -v want="$platform" '
+    /"name":/           { n=$0; sub(/.*"name": *"/,"",n); sub(/".*/,"",n) }
+    /"id":/             { i=$0; sub(/.*"id": *"/,"",i);   sub(/".*/,"",i) }
+    /"targetPlatform":/ { p=$0; sub(/.*"targetPlatform": *"/,"",p); sub(/".*/,"",p) }
+    /"emulator":/       { e=($0 ~ /true/) ? "emu" : "real"
+                          if (index(p, want) == 1) printf "%s\t%s\t%s\n", i, e, n }'
+}
+
+if ! $has_device_arg; then
+  devices=$(list_devices)
+  if [[ -z $devices && $platform == ios ]]; then
+    echo "… Không có thiết bị iOS, đang mở Simulator"
+    open -a Simulator || true
+    for _ in $(seq 1 30); do sleep 2; devices=$(list_devices); [[ -n $devices ]] && break; done
+  fi
+  if [[ -z $devices ]]; then
+    echo "✗ Không tìm thấy thiết bị $platform nào đang kết nối." >&2
+    if [[ $platform == android ]]; then
+      echo "  Cắm điện thoại (bật USB debugging) hoặc mở emulator: flutter emulators --launch <id>" >&2
+    else
+      echo "  Cắm iPhone qua cáp/Wi-Fi (bật Developer Mode) hoặc mở Simulator." >&2
+    fi
+    exit 1
+  fi
+  # Prefer a real device; release mode can't run on the iOS simulator.
+  pick=$(printf '%s\n' "$devices" | awk -F'\t' '$2=="real"' | head -1)
+  if [[ -z $pick ]]; then
+    if [[ $mode == prod && $platform == ios ]]; then
+      echo "✗ Chế độ prod (release) không chạy được trên iOS Simulator, cần iPhone thật." >&2; exit 1
+    fi
+    pick=$(printf '%s\n' "$devices" | head -1)
+  fi
+  echo "→ Thiết bị: $(cut -f3 <<<"$pick") ($(cut -f1 <<<"$pick"))"
+  extra=(-d "$(cut -f1 <<<"$pick")" "${extra[@]}")
+fi
+
+flags=(--debug); [[ $mode == prod ]] && flags=(--release)
+set -x
+exec flutter run "${flags[@]}" "${defines[@]}" "${extra[@]}"
