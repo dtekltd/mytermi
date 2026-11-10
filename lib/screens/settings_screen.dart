@@ -6,6 +6,7 @@ import '../services/app_services.dart';
 import '../services/settings_store.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import 'keys_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, required this.app});
@@ -17,7 +18,7 @@ class SettingsScreen extends StatelessWidget {
     return SafeArea(
       bottom: false,
       child: ListenableBuilder(
-        listenable: s,
+        listenable: Listenable.merge([s, app.hosts]),
         builder: (context, _) => ListView(
           padding: const EdgeInsets.only(bottom: 130),
           children: [
@@ -148,6 +149,19 @@ class SettingsScreen extends StatelessWidget {
             // ------------------------------------------------- data
             const SectionLabel('Dữ liệu & bảo mật'),
             _Group(children: [
+              _Tile(
+                icon: Icons.key_rounded,
+                title: 'Private keys',
+                subtitle: 'Quản lý SSH key dùng chung cho các host',
+                trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text('${app.hosts.keys.length}', style: TextStyle(fontSize: 16, color: context.colors.textDim)),
+                  Icon(Icons.chevron_right, color: context.colors.textDim),
+                ]),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => KeysScreen(store: app.hosts)),
+                ),
+              ),
               _Tile(
                 icon: Icons.delete_sweep_outlined,
                 title: 'Xoá toàn bộ lịch sử lệnh',

@@ -181,10 +181,10 @@ class SshSession extends ChangeNotifier {
           return;
         }
       } else {
-        final pem = secrets.privateKey;
-        if (pem == null || pem.trim().isEmpty) throw 'Chưa có private key cho host này';
-        final pp = (secrets.passphrase?.isEmpty ?? true) ? null : secrets.passphrase;
-        identities = SSHKeyPair.fromPem(pem, pp);
+        final key = hosts.keyById(host.keyId);
+        final ks = key == null ? null : await hosts.keySecrets(key.id);
+        if (ks == null) throw 'Host chưa chọn private key (hoặc key đã bị xoá). Sửa host để chọn key.';
+        identities = SSHKeyPair.fromPem(ks.pem, ks.passphrase);
       }
 
       final socket = await SSHSocket.connect(host.hostname, host.port, timeout: const Duration(seconds: 10));

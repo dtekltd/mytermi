@@ -8,6 +8,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mytermi/models/host.dart';
 import 'package:mytermi/models/snippet.dart';
+import 'package:mytermi/models/ssh_key.dart';
+import 'package:mytermi/screens/host_edit_screen.dart';
+import 'package:mytermi/screens/keys_screen.dart';
 import 'package:mytermi/screens/home_screen.dart';
 import 'package:mytermi/screens/terminal_screen.dart';
 import 'package:mytermi/services/app_services.dart';
@@ -44,9 +47,11 @@ void main() {
       settings: await SettingsStore.load(),
     );
     await app.hosts.save(Host(id: 'h1', label: 'dev1', hostname: '10.0.0.5', username: 'ubuntu'), const HostSecrets());
+    final key = await app.hosts.addKey(label: 'iphone', pem: generateEd25519Pem('iphone'));
+    await app.hosts.addKey(label: 'macbook', pem: generateEd25519Pem('macbook'));
     await app.hosts.save(
-        Host(id: 'h2', label: 'userver', hostname: 'userver.lan', username: 'tphan', auth: AuthMethod.key),
-        const HostSecrets(privateKey: 'x'));
+        Host(id: 'h2', label: 'userver', hostname: 'userver.lan', username: 'tphan', auth: AuthMethod.key, keyId: key.id),
+        const HostSecrets());
     await app.commands.saveSnippet(Snippet(id: 's1', name: 'Restart nginx', command: 'sudo systemctl restart nginx'));
     await app.commands.saveSnippet(Snippet(id: 's2', name: 'Disk', command: 'df -h'));
     for (final c in ['git status', 'git push origin main', 'git log --oneline -20', 'git status', 'ls -la']) {
@@ -81,6 +86,19 @@ void main() {
       await t.tap(find.text('Settings').last);
       await t.pumpAndSettle();
       await expectLater(find.byType(MaterialApp), matchesGoldenFile('shots/${mode}_5_settings.png'));
+    });
+
+    testWidgets('keys $mode', skip: !_enabled, (t) async {
+      await phone(t);
+      Future<void> shot(Widget w, String name) async {
+        await t.pumpWidget(MaterialApp(theme: buildTheme(pal), debugShowCheckedModeBanner: false, home: w));
+        await t.pumpAndSettle();
+        await expectLater(find.byType(MaterialApp), matchesGoldenFile('shots/${mode}_$name.png'));
+      }
+
+      await shot(KeysScreen(store: app.hosts), '6_keys');
+      await shot(KeyDetailScreen(store: app.hosts, keyId: app.hosts.keys.first.id, justCreated: true), '7_key_detail');
+      await shot(HostEditScreen(store: app.hosts, host: app.hosts.hosts.last), '8_host_edit_key');
     });
 
     testWidgets('terminal $mode', skip: !_enabled, (t) async {

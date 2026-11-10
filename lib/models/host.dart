@@ -9,6 +9,7 @@ class Host {
     this.port = 22,
     required this.username,
     this.auth = AuthMethod.password,
+    this.keyId,
   });
 
   final String id;
@@ -17,6 +18,9 @@ class Host {
   int port;
   String username;
   AuthMethod auth;
+
+  /// Saved key (see SshKey) used when [auth] is [AuthMethod.key].
+  String? keyId;
 
   String get displayName => label.trim().isEmpty ? hostname : label;
   String get address => '$username@$hostname${port == 22 ? '' : ':$port'}';
@@ -28,6 +32,7 @@ class Host {
         'port': port,
         'username': username,
         'auth': auth.name,
+        if (keyId != null) 'keyId': keyId,
       };
 
   factory Host.fromJson(Map<String, dynamic> j) => Host(
@@ -40,12 +45,18 @@ class Host {
           (a) => a.name == j['auth'],
           orElse: () => AuthMethod.password,
         ),
+        keyId: j['keyId'] as String?,
       );
 }
 
 class HostSecrets {
-  const HostSecrets({this.password, this.privateKey, this.passphrase});
+  const HostSecrets({this.password});
   final String? password;
-  final String? privateKey;
+}
+
+/// Private key material read from secure storage.
+class KeySecrets {
+  const KeySecrets({required this.pem, this.passphrase});
+  final String pem;
   final String? passphrase;
 }

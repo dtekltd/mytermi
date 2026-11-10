@@ -1,10 +1,10 @@
-import 'package:dartssh2/dartssh2.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../models/host.dart';
+import '../models/ssh_key.dart';
 import '../services/host_store.dart';
 import '../theme.dart';
+import 'keys_screen.dart';
 import '../util/ids.dart';
 
 class HostEditScreen extends StatefulWidget {
@@ -23,8 +23,7 @@ class _HostEditScreenState extends State<HostEditScreen> {
   final _port = TextEditingController(text: '22');
   final _username = TextEditingController();
   final _password = TextEditingController();
-  final _privateKey = TextEditingController();
-  final _passphrase = TextEditingController();
+  String? _keyId;
   AuthMethod _auth = AuthMethod.password;
   bool _obscure = true;
   bool _saving = false;
@@ -41,44 +40,31 @@ class _HostEditScreenState extends State<HostEditScreen> {
       _port.text = '${h.port}';
       _username.text = h.username;
       _auth = h.auth;
+      _keyId = widget.store.keyById(h.keyId)?.id;
       widget.store.secretsFor(h).then((s) {
-        if (!mounted) return;
-        setState(() {
-          _password.text = s.password ?? '';
-          _privateKey.text = s.privateKey ?? '';
-          _passphrase.text = s.passphrase ?? '';
-        });
+        if (mounted) setState(() => _password.text = s.password ?? '');
       });
+    } else if (widget.store.keys.length == 1) {
+      _keyId = widget.store.keys.first.id; // only one key: preselect it
     }
   }
 
   @override
   void dispose() {
-    for (final c in [_label, _hostname, _port, _username, _password, _privateKey, _passphrase]) {
+    for (final c in [_label, _hostname, _port, _username, _password]) {
       c.dispose();
     }
     super.dispose();
   }
 
-  String? _validateKey(String? v) {
-    if (_auth != AuthMethod.key) return null;
-    final pem = (v ?? '').trim();
-    if (pem.isEmpty) return 'Dán private key vào đây';
-    try {
-      final pp = _passphrase.text.isEmpty ? null : _passphrase.text;
-      if (SSHKeyPair.isEncryptedPem(pem) && pp == null) {
-        return 'Key đã mã hoá, nhập passphrase bên dưới';
-      }
-      SSHKeyPair.fromPem(pem, pp);
-    } catch (e) {
-      return 'Key không hợp lệ hoặc sai passphrase';
-    }
-    return null;
-  }
-
-  Future<void> _pasteKey() async {
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (data?.text != null) setState(() => _privateKey.text = data!.text!.trim());
+  Future<void> _pickKey(FormFieldState<String> field) async {
+    final key = await Navigator.push<SshKey>(
+      context,
+      MaterialPageRoute(builder: (_) => KeysScreen(store: widget.store, pick: true, selectedId: _keyId)),
+    );
+    if (key == null) return;
+    setState(() => _keyId = key.id);
+    field.didChange(key.id);
   }
 
   Future<void> _save() async {
@@ -91,15 +77,9 @@ class _HostEditScreenState extends State<HostEditScreen> {
       port: int.parse(_port.text.trim()),
       username: _username.text.trim(),
       auth: _auth,
+      keyId: _auth == AuthMethod.key ? _keyId : null,
     );
-    await widget.store.save(
-      host,
-      HostSecrets(
-        password: _password.text,
-        privateKey: '${_privateKey.text.trim()}\n',
-        passphrase: _passphrase.text,
-      ),
-    );
+    await widget.store.save(host, HostSecrets(password: _password.text));
     if (mounted) Navigator.pop(context);
   }
 
@@ -178,39 +158,86 @@ class _HostEditScreenState extends State<HostEditScreen> {
                   ),
                 ),
               )
-            else ...[
-              TextFormField(
-                controller: _privateKey,
-                maxLines: 6,
-                autocorrect: false,
-                style: const TextStyle(fontFamily: monoFont, fontSize: 12),
-                decoration: InputDecoration(
-                  labelText: 'Private key (OpenSSH / PEM)',
-                  hintText: '-----BEGIN OPENSSH PRIVATE KEY-----',
-                  alignLabelWithHint: true,
-                  suffixIcon: IconButton(
-                    tooltip: 'Dán từ clipboard',
-                    icon: const Icon(Icons.content_paste),
-                    onPressed: _pasteKey,
-                  ),
-                ),
-                validator: _validateKey,
+            else
+              FormField<String>(
+                initialValue: _keyId,
+                validator: (_) => _keyId == null ? 'Chọn một private key' : null,
+                builder: (field) {
+                  final k = widget.store.keyById(_keyId);
+                  return _KeyPickerTile(
+                    keyLabel: k?.label,
+                    keyInfo: k == null ? null : '${k.typeLabel} · ${k.fingerprint}',
+                    error: field.errorText,
+                    onTap: () => _pickKey(field),
+                  );
+                },
               ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _passphrase,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: 'Passphrase (nếu có)'),
-              ),
-            ],
             const SizedBox(height: 24),
             Text(
-              'Password và private key được lưu mã hoá trong Keychain (iOS) / Keystore (Android).',
+              'Password và private key được lưu mã hoá trong Keychain (iOS) / Keystore (Android). '
+              'Quản lý key trong Settings › Private keys.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
         ),
       ),
     );
+  }
+}
+
+/// "Private key: NAME" row that opens the key picker.
+class _KeyPickerTile extends StatelessWidget {
+  const _KeyPickerTile({this.keyLabel, this.keyInfo, this.error, required this.onTap});
+  final String? keyLabel;
+  final String? keyInfo;
+  final String? error;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Material(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: error == null ? null : Border.all(color: c.red, width: 1.2),
+            ),
+            child: Row(children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(color: c.blue, borderRadius: BorderRadius.circular(10)),
+                child: const Icon(Icons.key_rounded, color: Colors.white),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(keyLabel ?? 'Chọn private key',
+                      style: TextStyle(fontSize: 16, color: keyLabel == null ? c.textDim : c.text)),
+                  if (keyInfo != null)
+                    Text(keyInfo!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontFamily: monoFont, fontSize: 11.5, color: c.textDim)),
+                ]),
+              ),
+              Icon(Icons.chevron_right, color: c.textDim),
+            ]),
+          ),
+        ),
+      ),
+      if (error != null)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(14, 6, 0, 0),
+          child: Text(error!, style: TextStyle(color: c.red, fontSize: 12)),
+        ),
+    ]);
   }
 }
