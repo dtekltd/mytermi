@@ -84,18 +84,30 @@ fi
 has_device_arg=false
 for a in "${extra[@]}"; do [[ $a == -d || $a == --device-id* ]] && has_device_arg=true; done
 
-# Prints "id<TAB>emulator<TAB>name" for each connected device of $platform.
+# Prints "id<TAB>emu|real<TAB>name" for each connected device of $platform.
+# Fields are collected per device object (key order varies between devices).
+# $1 = extra seconds to wait for slow (USB / wireless) iOS devices.
 list_devices() {
-  flutter devices --machine 2>/dev/null | awk -v want="$platform" '
-    /"name":/           { n=$0; sub(/.*"name": *"/,"",n); sub(/".*/,"",n) }
+  local timeout=()
+  [[ -n ${1:-} ]] && timeout=(--device-timeout "$1")
+  flutter devices --machine "${timeout[@]}" 2>/dev/null | awk -v want="$platform" '
+    /^  \{/             { n=""; i=""; p=""; e="real" }
+    /"name":/ && !n     { n=$0; sub(/.*"name": *"/,"",n); sub(/".*/,"",n) }
     /"id":/             { i=$0; sub(/.*"id": *"/,"",i);   sub(/".*/,"",i) }
     /"targetPlatform":/ { p=$0; sub(/.*"targetPlatform": *"/,"",p); sub(/".*/,"",p) }
-    /"emulator":/       { e=($0 ~ /true/) ? "emu" : "real"
-                          if (index(p, want) == 1) printf "%s\t%s\t%s\n", i, e, n }'
+    /"emulator": *true/ { e="emu" }
+    /^  \}/             { if (index(p, want) == 1) printf "%s\t%s\t%s\n", i, e, n }'
 }
+
+has_real() { awk -F'\t' '$2=="real"' <<<"$1" | grep -q .; }
 
 if ! $has_device_arg; then
   devices=$(list_devices)
+  if [[ $platform == ios && $mode == prod ]] && ! has_real "$devices"; then
+    echo "… Đang tìm iPhone/iPad thật (cáp hoặc Wi-Fi)…"
+    more=$(list_devices 10)
+    [[ -n $more ]] && devices=$more
+  fi
   if [[ -z $devices && $platform == ios ]]; then
     echo "… Không có thiết bị iOS, đang mở Simulator"
     open -a Simulator || true
@@ -114,7 +126,18 @@ if ! $has_device_arg; then
   pick=$(printf '%s\n' "$devices" | awk -F'\t' '$2=="real"' | head -1)
   if [[ -z $pick ]]; then
     if [[ $mode == prod && $platform == ios ]]; then
-      echo "✗ Chế độ prod (release) không chạy được trên iOS Simulator, cần iPhone thật." >&2; exit 1
+      cat >&2 <<'EOF'
+✗ Chế độ prod (release) không chạy được trên iOS Simulator, cần iPhone thật, nhưng Flutter chưa thấy iPhone nào.
+  Kiểm tra trên iPhone:
+    1. Mở khoá màn hình, bấm "Tin cậy" (Trust) khi được hỏi lúc cắm cáp.
+    2. Bật Developer Mode: Cài đặt › Quyền riêng tư & Bảo mật › Chế độ nhà phát triển, rồi khởi động lại máy.
+  Trên Mac:
+    3. Mở Xcode › Window › Devices and Simulators, đợi iPhone hiện ra và chuẩn bị xong (lần đầu có thể mất vài phút).
+    4. Chạy `flutter devices` (hoặc `fvm flutter devices`) để xem iPhone đã được liệt kê chưa.
+  Danh sách Flutter đang thấy:
+EOF
+      flutter devices 2>&1 | sed 's/^/    /' >&2
+      exit 1
     fi
     pick=$(printf '%s\n' "$devices" | head -1)
   fi
