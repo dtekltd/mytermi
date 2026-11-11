@@ -166,9 +166,23 @@ class _TerminalScreenState extends State<TerminalScreen> {
             };
 
   /// Ctrl (⌘ on macOS) with = / - / 0 zooms the terminal font.
+  /// Desktop: Enter while text is selected copies it (like Windows Terminal)
+  /// instead of sending Enter to the shell.
   KeyEventResult _onKeyEvent(FocusNode _, KeyEvent e) {
     if (e is KeyUpEvent) return KeyEventResult.ignored;
     final kb = HardwareKeyboard.instance;
+    final s = _m.active;
+    if (isDesktop &&
+        s != null &&
+        s.controller.selection != null &&
+        (e.logicalKey == LogicalKeyboardKey.enter || e.logicalKey == LogicalKeyboardKey.numpadEnter) &&
+        !kb.isControlPressed &&
+        !kb.isAltPressed &&
+        !kb.isMetaPressed &&
+        !kb.isShiftPressed) {
+      if (e is KeyDownEvent) _copy(s);
+      return KeyEventResult.handled;
+    }
     final mod = defaultTargetPlatform == TargetPlatform.macOS ? kb.isMetaPressed : kb.isControlPressed;
     if (!mod || kb.isAltPressed) return KeyEventResult.ignored;
     final k = e.logicalKey;

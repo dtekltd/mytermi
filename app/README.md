@@ -39,7 +39,7 @@ run   [dev|prod|build] [android|windows] [extra flutter args...]   # Windows (ru
   the run's Artifacts) or when you push a `v*` tag (the zip is also attached to a GitHub Release). Set the repository
   variable `MYTERMI_API_URL` to bake in your sync server.
 - On desktop the terminal uses the mouse (drag to select, wheel to scroll, right click copies the
-  selection or pastes) and the keyboard: **Ctrl+Shift+C / Ctrl+Shift+V** copy and paste (plain
+  selection or pastes, **Enter** copies the selection) and the keyboard: **Ctrl+Shift+C / Ctrl+Shift+V** copy and paste (plain
   Ctrl+C/V/A go to the shell), **Ctrl+= / Ctrl+- / Ctrl+0** change the font size. The on-screen
   extra-keys row is hidden.
 - Sign in with email works. Google and Apple sign-in are mobile-only.

@@ -78,6 +78,40 @@ void main() {
     await close(t, s);
   });
 
+  for (final desktop in [true, false]) {
+    testWidgets('Enter with a selection copies it (desktop only), desktop=$desktop', (t) async {
+      debugIsDesktop = desktop;
+      final s = await open(t);
+      s.terminal.write('hello world');
+      final out = <String>[];
+      s.terminal.onOutput = out.add;
+      String? copied;
+      t.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'Clipboard.setData') copied = (call.arguments as Map)['text'] as String;
+        return null;
+      });
+      final b = s.terminal.buffer;
+      s.controller.setSelection(b.createAnchor(0, b.absoluteCursorY), b.createAnchor(5, b.absoluteCursorY));
+      await t.pump();
+
+      await t.sendKeyEvent(LogicalKeyboardKey.enter);
+      await t.pump();
+      if (desktop) {
+        expect(copied, 'hello');
+        expect(s.controller.selection, isNull);
+        expect(out, isEmpty); // Enter didn't reach the shell
+        // Without a selection Enter goes to the shell as usual.
+        await t.sendKeyEvent(LogicalKeyboardKey.enter);
+        await t.pump();
+        expect(out.join(), '\r');
+      } else {
+        expect(copied, isNull);
+      }
+      await t.pump(const Duration(seconds: 3)); // let the "copied" snackbar go
+      await close(t, s);
+    });
+  }
+
   testWidgets('Ctrl+= / Ctrl+- / Ctrl+0 zoom the terminal font', (t) async {
     debugIsDesktop = true;
     final s = await open(t);
