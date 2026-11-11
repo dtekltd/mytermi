@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "MyTermi Console", robots: { index: f
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi">
+    <html lang="en">
       <body className="antialiased">{children}</body>
     </html>
   );

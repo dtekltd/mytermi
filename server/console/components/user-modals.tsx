@@ -32,7 +32,7 @@ export function ResetPasswordModal({ user, onClose, onDone }: { user: Target; on
     setErr("");
     try {
       await api(`/users/${user.id}/password`, { method: "POST", body: { password: pw, revoke_sessions: revoke } });
-      onDone(`Đã đặt mật khẩu mới cho ${user.email}${revoke ? " và đăng xuất mọi thiết bị" : ""}.`);
+      onDone(`New password set for ${user.email}${revoke ? " and all devices signed out" : ""}.`);
     } catch (e) {
       setErr(errorText(e));
       setBusy(false);
@@ -41,36 +41,36 @@ export function ResetPasswordModal({ user, onClose, onDone }: { user: Target; on
 
   return (
     <Modal
-      title="Đặt lại mật khẩu"
+      title="Reset password"
       onClose={onClose}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            Huỷ
+            Cancel
           </Button>
           <Button busy={busy} disabled={pw.length < 8} onClick={submit}>
-            Đặt mật khẩu
+            Set password
           </Button>
         </>
       }
     >
       <p className="text-sm text-dim">
-        Mật khẩu đăng nhập mới cho <span className="font-medium text-fg">{user.email}</span>. Gửi mật khẩu này cho người dùng
-        qua kênh an toàn.
+        New sign-in password for <span className="font-medium text-fg">{user.email}</span>. Send it to the user over a
+        secure channel.
       </p>
-      <Field label="Mật khẩu mới" hint="Ít nhất 8 ký tự.">
+      <Field label="New password" hint="At least 8 characters.">
         <div className="flex gap-1.5">
           <Input value={pw} onChange={(e) => setPw(e.target.value)} className="font-mono" autoComplete="off" spellCheck={false} />
-          <IconButton label="Tạo ngẫu nhiên" onClick={() => setPw(randomPassword())} className="size-9.5 shrink-0">
+          <IconButton label="Generate random" onClick={() => setPw(randomPassword())} className="size-9.5 shrink-0">
             <Icon name="dice" />
           </IconButton>
-          <IconButton label={copied ? "Đã copy" : "Copy"} onClick={copy} className="size-9.5 shrink-0">
+          <IconButton label={copied ? "Copied" : "Copy"} onClick={copy} className="size-9.5 shrink-0">
             <Icon name="copy" />
           </IconButton>
         </div>
       </Field>
-      <Toggle checked={revoke} onChange={setRevoke} label="Đăng xuất mọi thiết bị của người dùng" />
-      <Alert tone="amber">Mật khẩu vault (E2EE) không đổi: người dùng vẫn mở dữ liệu đã sync bằng mật khẩu vault hoặc recovery key cũ.</Alert>
+      <Toggle checked={revoke} onChange={setRevoke} label="Sign out all of the user's devices" />
+      <Alert tone="amber">The vault password (E2EE) does not change: the user still unlocks synced data with their existing vault password or recovery key.</Alert>
       {err && <Alert>{err}</Alert>}
     </Modal>
   );
@@ -125,8 +125,8 @@ export function PlanModal({
       const expires = hasEnd && !chosen?.is_default ? endOfDay(end).toISOString() : null;
       await api(`/users/${user.id}`, { method: "PATCH", body: { plan_id: planId, plan_expires_at: expires } });
       onDone(
-        `Đã chuyển ${user.email} sang gói ${chosen?.name ?? planId}` +
-          (expires ? `, hết hạn ${fmtDate(expires, false)}.` : ", không thời hạn."),
+        `Moved ${user.email} to the ${chosen?.name ?? planId} plan` +
+          (expires ? `, expires ${fmtDate(expires, false)}.` : ", no expiry."),
       );
     } catch (e) {
       setErr(errorText(e));
@@ -136,15 +136,15 @@ export function PlanModal({
 
   return (
     <Modal
-      title="Gói dịch vụ"
+      title="Change plan / expiry"
       onClose={onClose}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
-            Huỷ
+            Cancel
           </Button>
           <Button busy={busy} disabled={hasEnd && !chosen?.is_default && !end} onClick={submit}>
-            Lưu
+            Save
           </Button>
         </>
       }
@@ -154,39 +154,39 @@ export function PlanModal({
         {user.plan_expires_at && (
           <>
             {" · "}
-            {planExpired(user) ? "gói hiện tại đã hết hạn" : "hết hạn"} {fmtDate(user.plan_expires_at, false)}
+            {planExpired(user) ? "current plan expired" : "expires"} {fmtDate(user.plan_expires_at, false)}
           </>
         )}
       </p>
-      <Field label="Gói">
+      <Field label="Plan">
         <Select value={planId} onChange={(e) => setPlanId(e.target.value)}>
           {plans.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.name} {p.max_devices ? `(${p.max_devices} thiết bị)` : "(không giới hạn thiết bị)"}
-              {p.is_default ? " · mặc định" : ""}
+              {p.name} {p.max_devices ? `(${p.max_devices} devices)` : "(unlimited devices)"}
+              {p.is_default ? " · default" : ""}
             </option>
           ))}
         </Select>
       </Field>
       {chosen?.is_default ? (
-        <p className="text-sm text-dim">Gói mặc định không có thời hạn.</p>
+        <p className="text-sm text-dim">The default plan has no expiry.</p>
       ) : (
         <>
-          <Toggle checked={hasEnd} onChange={setHasEnd} label="Có ngày hết hạn" />
+          <Toggle checked={hasEnd} onChange={setHasEnd} label="Has an expiry date" />
           {hasEnd && (
             <>
               <Field
-                label="Hết hạn vào cuối ngày"
-                hint={`Sau ngày này tài khoản tự về gói ${def?.name ?? "mặc định"}. Gói đã gán vẫn được giữ để gia hạn.`}
+                label="Expires at the end of"
+                hint={`After this day the account falls back to the ${def?.name ?? "default"} plan. The assigned plan is kept so it can be renewed.`}
               >
                 <Input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
               </Field>
               <div className="flex flex-wrap gap-2">
                 {[
-                  [1, "+1 tháng"],
-                  [3, "+3 tháng"],
-                  [6, "+6 tháng"],
-                  [12, "+1 năm"],
+                  [1, "+1 month"],
+                  [3, "+3 months"],
+                  [6, "+6 months"],
+                  [12, "+1 year"],
                 ].map(([m, label]) => (
                   <Button key={m} variant="ghost" className="px-3 py-1.5 text-xs" onClick={() => extend(m as number)}>
                     {label}

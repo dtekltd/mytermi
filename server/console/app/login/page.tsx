@@ -33,22 +33,21 @@ export default function LoginPage() {
           <div className="grid size-11 place-items-center rounded-xl bg-accent font-mono font-bold text-white">&gt;_</div>
           <div>
             <h1 className="text-lg font-semibold">MyTermi Console</h1>
-            <p className="text-sm text-dim">Đăng nhập quản trị</p>
+            <p className="text-sm text-dim">Admin sign-in</p>
           </div>
         </div>
         {error && <Alert>{error}</Alert>}
         <Field label="Email">
           <Input type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />
         </Field>
-        <Field label="Mật khẩu">
+        <Field label="Password">
           <Input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
         </Field>
         <Button type="submit" busy={busy} className="w-full">
-          Đăng nhập
+          Sign in
         </Button>
         <p className="text-xs leading-relaxed text-dim">
-          Tạo admin đầu tiên bằng <code className="font-mono">mytermi admin create --email … --password …</code> hoặc biến môi
-          trường <code className="font-mono">MYTERMI_ADMIN_EMAIL</code> / <code className="font-mono">MYTERMI_ADMIN_PASSWORD</code>.
+          Create the first admin with <code className="font-mono">mytermi admin create --email … --password …</code> or the environment variables <code className="font-mono">MYTERMI_ADMIN_EMAIL</code> / <code className="font-mono">MYTERMI_ADMIN_PASSWORD</code>.
         </p>
       </form>
     </div>

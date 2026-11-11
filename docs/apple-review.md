@@ -5,7 +5,7 @@
 | Guideline | How MyTermi meets it |
 |---|---|
 | **4.8 Login services.** Offering Google sign-in requires Sign in with Apple. | Sign in with Apple is available on iOS. Turn it on in the console (audience = bundle id) whenever Google is on. |
-| **5.1.1(v) Account deletion.** Apps that support account creation must let users delete the account in the app. | **Settings → Tài khoản → Xoá tài khoản** deletes the account and all synced data on the server. |
+| **5.1.1(v) Account deletion.** Apps that support account creation must let users delete the account in the app. | **Settings → Account → Delete account** deletes the account and all synced data on the server. |
 | **5.1.1(i/ii) Don't force a login for features that don't need an account.** | The SSH client works without an account; signing in is only for sync. |
 | **2.1 Demo account.** | Create a reviewer account and put the credentials in App Review notes (see below). |
 

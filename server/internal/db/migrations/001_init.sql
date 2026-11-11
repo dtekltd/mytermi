@@ -12,8 +12,8 @@ CREATE TABLE plans (
 CREATE UNIQUE INDEX plans_one_default ON plans (is_default) WHERE is_default;
 
 INSERT INTO plans (id, name, description, max_devices, sync_enabled, is_default, sort_order) VALUES
-    ('free', 'Free', 'Sync tối đa 2 thiết bị', 2, true, true, 0),
-    ('pro',  'Pro',  'Không giới hạn thiết bị', 0, true, false, 1);
+    ('free', 'Free', 'Sync up to 2 devices', 2, true, true, 0),
+    ('pro',  'Pro',  'Unlimited devices', 0, true, false, 1);
 
 CREATE TABLE users (
     id             uuid PRIMARY KEY DEFAULT gen_random_uuid(),

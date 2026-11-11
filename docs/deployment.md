@@ -50,7 +50,7 @@ Migrations run automatically at startup. `mytermi migrate` runs them on their ow
 | `MYTERMI_BIND`, `MYTERMI_PORT`, `MYTERMI_DB_PORT` | `0.0.0.0`, `8080`, `5432` | docker-compose only: where the server and Postgres ports are published on the host. Change them if another service already uses 8080 or 5432. |
 | `MYTERMI_ADMIN_EMAIL`, `MYTERMI_ADMIN_PASSWORD` | | At startup, create this admin (or promote the account). The password is set only if the account has none. |
 
-Everything else is configured in **Console → Cấu hình**, stored in the database, and applied
+Everything else is configured in **Console → Settings**, stored in the database, and applied
 without a restart.
 
 ## TLS (required for production)
@@ -64,12 +64,12 @@ sync.example.com {
 ```
 
 Then set `MYTERMI_TRUST_PROXY=1`. In the app, set the server under
-**Settings → Đăng nhập → Máy chủ**, or build with `MYTERMI_API_URL=https://sync.example.com ./run build`.
+**Settings → Sign in / Create account → Sync server**, or build with `MYTERMI_API_URL=https://sync.example.com ./run build`.
 
 ## SMTP (email codes)
 
-In **Console → Cấu hình → Email (SMTP)**, fill in host, port, security and From, save, then press
-**Gửi thử** (send test). Any provider works (Amazon SES, Mailgun, Postmark, Gmail with an app
+In **Console → Settings → Email (SMTP)**, fill in host, port, security and From, save, then press
+**Send test email**. Any provider works (Amazon SES, Mailgun, Postmark, Gmail with an app
 password…). Configure SPF and DKIM for the From domain, or codes will land in spam.
 
 ## Sign in with Apple
@@ -95,7 +95,7 @@ password…). Configure SPF and DKIM for the From domain, or codes will land in 
    ```
 
    The Google button stays hidden on iOS until `GOOGLE_IOS_CLIENT_ID` is set.
-4. Console → **Đăng nhập bằng Google**: turn it on and add every client id (iOS, Android, Web). ID
+4. Console → **Sign in with Google**: turn it on and add every client id (iOS, Android, Web). ID
    tokens must have one of them as their audience.
 
 ## Backups

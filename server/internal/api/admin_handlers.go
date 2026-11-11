@@ -456,8 +456,8 @@ func (s *Server) handleTestEmail(w http.ResponseWriter, r *http.Request, a *auth
 		return nil
 	}
 	err = sender.Send(ctx, mail.Message{
-		To: to, Subject: st.General.AppName + ": email thử nghiệm",
-		Text: "SMTP đã được cấu hình đúng. / SMTP is configured correctly.",
+		To: to, Subject: st.General.AppName + ": test email",
+		Text: "SMTP is configured correctly.",
 	})
 	if err != nil {
 		return errf(http.StatusBadGateway, "email_send_failed", err.Error())

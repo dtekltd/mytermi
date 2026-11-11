@@ -47,7 +47,7 @@ export default function SettingsPage() {
     try {
       const x = await api<Resp>("/settings", { method: "PUT", body: s });
       setS(x.settings);
-      setMsg({ tone: "green", text: "Đã lưu cấu hình." });
+      setMsg({ tone: "green", text: "Settings saved." });
     } catch (e) {
       setMsg({ tone: "red", text: errorText(e) });
     } finally {
@@ -65,8 +65,8 @@ export default function SettingsPage() {
       });
       setMsg(
         x.logged
-          ? { tone: "red", text: "Chưa cấu hình SMTP (thiếu host hoặc From): server ở chế độ dev nên chỉ in email ra log, không gửi đi." }
-          : { tone: "green", text: `Đã gửi email thử tới ${testTo}. Nhớ bấm Lưu nếu chưa lưu cấu hình.` },
+          ? { tone: "red", text: "SMTP is not configured (missing host or From): the server is in dev mode, so the email was only written to the log, not sent." }
+          : { tone: "green", text: `Test email sent to ${testTo}. Remember to click Save if you haven't saved the settings yet.` },
       );
     } catch (e) {
       setMsg({ tone: "red", text: errorText(e) });
@@ -78,11 +78,11 @@ export default function SettingsPage() {
   return (
     <>
       <PageTitle
-        title="Cấu hình"
-        subtitle="Thay đổi có hiệu lực ngay, không cần khởi động lại server."
+        title="Settings"
+        subtitle="Changes take effect immediately, no server restart needed."
         actions={
           <Button onClick={save} busy={busy === "save"}>
-            Lưu cấu hình
+            Save
           </Button>
         }
       />
@@ -92,18 +92,18 @@ export default function SettingsPage() {
         </div>
       )}
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card title="Chung">
+        <Card title="General">
           <div className="space-y-4">
-            <Field label="Tên ứng dụng" hint="Dùng trong email gửi mã xác thực.">
+            <Field label="App name" hint="Used in verification code emails.">
               <Input value={s.general.app_name} onChange={(e) => set("general", { app_name: e.target.value })} />
             </Field>
-            <Field label="Email hỗ trợ">
+            <Field label="Support email">
               <Input type="email" value={s.general.support_email} onChange={(e) => set("general", { support_email: e.target.value })} />
             </Field>
             <Toggle
               checked={s.general.signup_enabled}
               onChange={(v) => set("general", { signup_enabled: v })}
-              label="Cho phép đăng ký tài khoản mới"
+              label="Allow new account sign-ups"
             />
           </div>
         </Card>
@@ -111,7 +111,7 @@ export default function SettingsPage() {
         <Card title="Email (SMTP)">
           {r.dev_mode && (
             <div className="mb-4">
-              <Alert tone="amber">Server đang chạy ở chế độ dev: khi chưa cấu hình SMTP, mã OTP được in ra log thay vì gửi email.</Alert>
+              <Alert tone="amber">The server is running in dev mode: until SMTP is configured, one-time codes are written to the log instead of being emailed.</Alert>
             </div>
           )}
           <div className="grid gap-4 sm:grid-cols-3">
@@ -134,37 +134,37 @@ export default function SettingsPage() {
                 onChange={(e) => set("smtp", { password: e.target.value })}
               />
             </Field>
-            <Field label="Bảo mật">
+            <Field label="Security">
               <Select value={s.smtp.security} onChange={(e) => set("smtp", { security: e.target.value })}>
                 <option value="starttls">STARTTLS (587)</option>
                 <option value="tls">TLS (465)</option>
-                <option value="none">Không mã hoá</option>
+                <option value="none">None (unencrypted)</option>
               </Select>
             </Field>
             <div className="sm:col-span-3">
-              <Field label="Người gửi (From)">
+              <Field label="Sender (From)">
                 <Input placeholder="MyTermi <no-reply@example.com>" value={s.smtp.from} onChange={(e) => set("smtp", { from: e.target.value })} />
               </Field>
             </div>
           </div>
           <div className="mt-4 flex flex-wrap items-end gap-2 border-t border-line pt-4">
             <div className="min-w-48 flex-1">
-              <Field label="Gửi email thử tới" hint="Lưu cấu hình trước khi gửi thử.">
+              <Field label="Send test email to" hint="Save the settings before sending a test.">
                 <Input type="email" value={testTo} onChange={(e) => setTestTo(e.target.value)} />
               </Field>
             </div>
             <Button variant="ghost" busy={busy === "test"} onClick={testEmail} className="mb-5">
-              Gửi thử
+              Send test email
             </Button>
           </div>
         </Card>
 
-        <Card title="Đăng nhập bằng Google">
+        <Card title="Sign in with Google">
           <div className="space-y-4">
-            <Toggle checked={s.google.enabled} onChange={(v) => set("google", { enabled: v })} label="Bật Google Sign-In" />
+            <Toggle checked={s.google.enabled} onChange={(v) => set("google", { enabled: v })} label="Enable Google Sign-In" />
             <Field
               label="OAuth Client ID"
-              hint="Mỗi dòng một Client ID (iOS, Android, Web) tạo trong Google Cloud Console. ID token phải có audience là một trong các ID này."
+              hint="One client ID per line (iOS, Android, Web), created in Google Cloud Console. The ID token's audience must be one of these IDs."
             >
               <ListInput
                 value={s.google.client_ids}
@@ -177,8 +177,8 @@ export default function SettingsPage() {
 
         <Card title="Sign in with Apple">
           <div className="space-y-4">
-            <Toggle checked={s.apple.enabled} onChange={(v) => set("apple", { enabled: v })} label="Bật Sign in with Apple" />
-            <Field label="Audience" hint="Bundle ID của app iOS (VD: com.mytermi.app), thêm Services ID nếu đăng nhập Apple trên Android/web.">
+            <Toggle checked={s.apple.enabled} onChange={(v) => set("apple", { enabled: v })} label="Enable Sign in with Apple" />
+            <Field label="Audience" hint="The iOS app's bundle ID (e.g. com.mytermi.app); add a Services ID for Apple sign-in on Android/web.">
               <ListInput value={s.apple.audiences} onChange={(v) => set("apple", { audiences: v })} placeholder="com.mytermi.app" />
             </Field>
           </div>

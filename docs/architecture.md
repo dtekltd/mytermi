@@ -77,7 +77,7 @@ See [encryption.md](encryption.md) for the crypto. The protocol:
    `409 vault_generation` and must unlock again.
 
 Sync runs on app start, on resume, 2 seconds after a local change, every 5 minutes while the app is
-open, and on "Đồng bộ ngay".
+open, and on "Sync now".
 
 It does not sync: command history, trusted host keys, or app settings. These stay per device.
 

@@ -18,7 +18,7 @@ function Stat({ label, value, hint }: { label: string; value: number | string; h
 function Breakdown({ data }: { data: Record<string, number> }) {
   const total = Object.values(data).reduce((a, b) => a + b, 0) || 1;
   const rows = Object.entries(data).sort((a, b) => b[1] - a[1]);
-  if (!rows.length) return <p className="text-sm text-dim">Chưa có dữ liệu.</p>;
+  if (!rows.length) return <p className="text-sm text-dim">No data yet.</p>;
   return (
     <ul className="space-y-3">
       {rows.map(([k, v]) => (
@@ -48,15 +48,15 @@ export default function Dashboard() {
 
   return (
     <>
-      <PageTitle title="Tổng quan" subtitle="Tình trạng người dùng và dữ liệu đồng bộ" />
+      <PageTitle title="Overview" subtitle="Users and synced data at a glance" />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Stat label="Người dùng" value={s.users} hint={`+${s.new_7d} trong 7 ngày`} />
-        <Stat label="Hoạt động 7 ngày" value={s.active_7d} />
-        <Stat label="Thiết bị đăng nhập" value={s.devices} />
-        <Stat label="Vault đã tạo" value={s.vaults} hint={`${s.items} mục đã mã hoá`} />
+        <Stat label="Users" value={s.users} hint={`+${s.new_7d} in the last 7 days`} />
+        <Stat label="Active (7 days)" value={s.active_7d} />
+        <Stat label="Signed-in devices" value={s.devices} />
+        <Stat label="Vaults created" value={s.vaults} hint={`${s.items} encrypted items`} />
       </div>
       <div className="mt-4 grid items-start gap-4 lg:grid-cols-3">
-        <Card title="Đăng ký 30 ngày qua" className="lg:col-span-2">
+        <Card title="Sign-ups, last 30 days" className="lg:col-span-2">
           <div className="flex h-56 items-end gap-1">
             {s.signups_daily.map((d) => (
               <div key={d.day} className="group relative flex h-full flex-1 items-end">
@@ -72,19 +72,19 @@ export default function Dashboard() {
           </div>
           <div className="mt-2 flex justify-between text-xs text-dim">
             <span>{s.signups_daily[0]?.day.slice(5)}</span>
-            <span>Hôm nay</span>
+            <span>Today</span>
           </div>
         </Card>
         <div className="space-y-4">
-          <Card title="Theo gói">
+          <Card title="By plan">
             <Breakdown data={s.by_plan} />
           </Card>
-          <Card title="Cách đăng nhập">
+          <Card title="Sign-in method">
             <Breakdown data={s.by_provider} />
           </Card>
         </div>
       </div>
-      {s.disabled > 0 && <p className="mt-4 text-sm text-dim">{s.disabled} tài khoản đang bị khoá.</p>}
+      {s.disabled > 0 && <p className="mt-4 text-sm text-dim">{s.disabled} account(s) disabled.</p>}
     </>
   );
 }

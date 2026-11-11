@@ -26,7 +26,7 @@ export default function PlansPage() {
     setMsg(null);
     try {
       await api(`/plans/${encodeURIComponent(edit.id)}`, { method: "PUT", body: edit });
-      setMsg({ tone: "green", text: `Đã lưu gói ${edit.name}.` });
+      setMsg({ tone: "green", text: `Saved plan ${edit.name}.` });
       setEdit(null);
       load();
     } catch (err) {
@@ -37,7 +37,7 @@ export default function PlansPage() {
   };
 
   const remove = async (p: Plan) => {
-    if (!confirm(`Xoá gói ${p.name}?`)) return;
+    if (!confirm(`Delete plan ${p.name}?`)) return;
     setMsg(null);
     try {
       await api(`/plans/${p.id}`, { method: "DELETE" });
@@ -52,8 +52,8 @@ export default function PlansPage() {
   return (
     <>
       <PageTitle
-        title="Gói dịch vụ"
-        subtitle="Giới hạn áp dụng cho người dùng. Chưa có thanh toán: admin đổi gói cho từng người ở trang Người dùng."
+        title="Plans"
+        subtitle="Limits applied to users. There are no payments yet: admins change each user's plan on the Users page."
         actions={
           <Button
             onClick={() => {
@@ -61,7 +61,7 @@ export default function PlansPage() {
               setIsNew(true);
             }}
           >
-            + Thêm gói
+            + Add plan
           </Button>
         }
       />
@@ -77,16 +77,16 @@ export default function PlansPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-semibold">{p.name}</h3>
-                  {p.is_default && <Badge tone="green">mặc định</Badge>}
+                  {p.is_default && <Badge tone="green">default</Badge>}
                 </div>
                 <div className="font-mono text-xs text-dim">{p.id}</div>
               </div>
-              <span className="text-sm text-dim">{p.users} người dùng</span>
+              <span className="text-sm text-dim">{p.users} users</span>
             </div>
             {p.description && <p className="mt-3 text-sm text-dim">{p.description}</p>}
             <ul className="mt-4 space-y-1.5 text-sm">
-              <li>Thiết bị: {p.max_devices ? `tối đa ${p.max_devices}` : "không giới hạn"}</li>
-              <li>Sync: {p.sync_enabled ? "có" : "không"}</li>
+              <li>Devices: {p.max_devices ? `up to ${p.max_devices}` : "unlimited"}</li>
+              <li>Sync: {p.sync_enabled ? "yes" : "no"}</li>
             </ul>
             <div className="mt-5 flex gap-2">
               <Button
@@ -96,11 +96,11 @@ export default function PlansPage() {
                   setIsNew(false);
                 }}
               >
-                Sửa
+                Edit
               </Button>
               {!p.is_default && (
                 <Button variant="danger" onClick={() => remove(p)}>
-                  Xoá
+                  Delete
                 </Button>
               )}
             </div>
@@ -111,19 +111,19 @@ export default function PlansPage() {
       {edit && (
         <div className="fixed inset-0 z-40 grid place-items-center bg-black/40 p-4" onClick={() => setEdit(null)}>
           <form onSubmit={save} onClick={(e) => e.stopPropagation()} className="w-full max-w-md space-y-4 rounded-2xl bg-surface p-6 shadow-xl">
-            <h2 className="text-lg font-semibold">{isNew ? "Thêm gói" : `Sửa gói ${edit.name}`}</h2>
+            <h2 className="text-lg font-semibold">{isNew ? "Add plan" : `Edit plan ${edit.name}`}</h2>
             {isNew && (
-              <Field label="Mã gói" hint="Chữ thường, số, - và _. Không đổi được sau khi tạo.">
+              <Field label="Plan ID" hint="Lowercase letters, digits, - and _. Cannot be changed after creation.">
                 <Input required pattern="[a-z0-9][a-z0-9_-]{0,31}" value={edit.id} onChange={(e) => setEdit({ ...edit, id: e.target.value })} />
               </Field>
             )}
-            <Field label="Tên hiển thị">
+            <Field label="Display name">
               <Input required value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} />
             </Field>
-            <Field label="Mô tả">
+            <Field label="Description">
               <Input value={edit.description} onChange={(e) => setEdit({ ...edit, description: e.target.value })} />
             </Field>
-            <Field label="Số thiết bị tối đa" hint="0 = không giới hạn. Áp dụng khi đăng nhập trên thiết bị mới.">
+            <Field label="Max devices" hint="0 = unlimited. Enforced when signing in on a new device.">
               <Input
                 type="number"
                 min={0}
@@ -131,18 +131,18 @@ export default function PlansPage() {
                 onChange={(e) => setEdit({ ...edit, max_devices: Number(e.target.value) })}
               />
             </Field>
-            <Toggle checked={edit.sync_enabled} onChange={(v) => setEdit({ ...edit, sync_enabled: v })} label="Cho phép sync dữ liệu" />
+            <Toggle checked={edit.sync_enabled} onChange={(v) => setEdit({ ...edit, sync_enabled: v })} label="Allow data sync" />
             <Toggle
               checked={edit.is_default}
               onChange={(v) => setEdit({ ...edit, is_default: v })}
-              label="Gói mặc định cho người dùng mới"
+              label="Default plan for new users"
             />
             <div className="flex justify-end gap-2 pt-2">
               <Button type="button" variant="ghost" onClick={() => setEdit(null)}>
-                Huỷ
+                Cancel
               </Button>
               <Button type="submit" busy={busy}>
-                Lưu
+                Save
               </Button>
             </div>
           </form>

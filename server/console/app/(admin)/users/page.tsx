@@ -47,11 +47,11 @@ export default function UsersPage() {
 
   return (
     <>
-      <PageTitle title="Người dùng" subtitle={data ? `${data.total} tài khoản` : undefined} />
+      <PageTitle title="Users" subtitle={data ? `${data.total} accounts` : undefined} />
       <Card>
         <div className="mb-4 grid gap-3 sm:grid-cols-[minmax(0,20rem)_11rem]">
           <Input
-            placeholder="Tìm theo email hoặc tên…"
+            placeholder="Search by email or name…"
             value={q}
             onChange={(e) => {
               setQ(e.target.value);
@@ -65,7 +65,7 @@ export default function UsersPage() {
               setOffset(0);
             }}
           >
-            <option value="">Tất cả gói</option>
+            <option value="">All plans</option>
             {plans.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -82,17 +82,17 @@ export default function UsersPage() {
         {!data ? (
           <Spinner />
         ) : data.users.length === 0 ? (
-          <Empty>Không có người dùng nào.</Empty>
+          <Empty>No users.</Empty>
         ) : (
           <div className="-mx-5 overflow-x-auto">
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-dim">
                   <th className="px-5 py-2 font-medium">Email</th>
-                  <th className="px-3 py-2 font-medium">Đăng nhập bằng</th>
-                  <th className="px-3 py-2 font-medium">Gói</th>
+                  <th className="px-3 py-2 font-medium">Sign-in</th>
+                  <th className="px-3 py-2 font-medium">Plan</th>
                   <th className="px-3 py-2 font-medium">Sync</th>
-                  <th className="px-3 py-2 font-medium">Hoạt động</th>
+                  <th className="px-3 py-2 font-medium">Last active</th>
                   <th className="px-5 py-2" />
                 </tr>
               </thead>
@@ -106,7 +106,7 @@ export default function UsersPage() {
                       <div className="mt-0.5 flex gap-1.5">
                         {u.name && <span className="text-xs text-dim">{u.name}</span>}
                         {u.role === "admin" && <Badge tone="blue">admin</Badge>}
-                        {u.disabled && <Badge tone="red">đã khoá</Badge>}
+                        {u.disabled && <Badge tone="red">disabled</Badge>}
                       </div>
                     </td>
                     <td className="px-3 py-3">
@@ -116,18 +116,18 @@ export default function UsersPage() {
                       <Badge tone={planExpired(u) ? "red" : u.plan_id === "free" ? "neutral" : "green"}>{planName(u.plan_id)}</Badge>
                       {u.plan_expires_at && (
                         <div className={`mt-0.5 text-xs ${planExpired(u) ? "text-red-600 dark:text-red-400" : "text-dim"}`}>
-                          {planExpired(u) ? "hết hạn" : "đến"} {fmtDate(u.plan_expires_at, false)}
+                          {planExpired(u) ? "expired" : "until"} {fmtDate(u.plan_expires_at, false)}
                         </div>
                       )}
                     </td>
-                    <td className="px-3 py-3 text-dim">{u.has_vault ? `${u.items} mục` : "—"}</td>
+                    <td className="px-3 py-3 text-dim">{u.has_vault ? `${u.items} items` : "—"}</td>
                     <td className="px-3 py-3 text-dim">{timeAgo(u.last_seen_at)}</td>
                     <td className="px-5 py-3">
                       <div className="flex justify-end gap-1">
-                        <IconButton label="Gói & thời hạn" onClick={() => setModal({ kind: "plan", user: u })}>
+                        <IconButton label="Change plan / expiry" onClick={() => setModal({ kind: "plan", user: u })}>
                           <Icon name="plan" />
                         </IconButton>
-                        <IconButton label="Đặt lại mật khẩu" onClick={() => setModal({ kind: "password", user: u })}>
+                        <IconButton label="Reset password" onClick={() => setModal({ kind: "password", user: u })}>
                           <Icon name="key" />
                         </IconButton>
                       </div>
@@ -145,10 +145,10 @@ export default function UsersPage() {
             </span>
             <div className="flex gap-2">
               <Button variant="ghost" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE))}>
-                Trước
+                Previous
               </Button>
               <Button variant="ghost" disabled={offset + PAGE >= data.total} onClick={() => setOffset(offset + PAGE)}>
-                Sau
+                Next
               </Button>
             </div>
           </div>

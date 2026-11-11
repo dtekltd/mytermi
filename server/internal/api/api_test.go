@@ -181,7 +181,7 @@ func (e *env) signUp(email, device string) resp {
 func (e *env) idToken(iss, aud, sub, email string, verified any, exp time.Duration) string {
 	tok := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"iss": iss, "aud": aud, "sub": sub, "email": email, "email_verified": verified,
-		"exp": time.Now().Add(exp).Unix(), "iat": time.Now().Unix(), "name": "Tuấn",
+		"exp": time.Now().Add(exp).Unix(), "iat": time.Now().Unix(), "name": "Tuan",
 	})
 	tok.Header["kid"] = "k1"
 	s, err := tok.SignedString(e.rsa)

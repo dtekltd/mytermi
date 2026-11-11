@@ -64,7 +64,7 @@ function UserView() {
   return (
     <>
       <Link href="/users/" className="text-sm text-dim hover:text-fg">
-        ← Người dùng
+        ← Users
       </Link>
       <PageTitle
         title={u.email}
@@ -72,8 +72,8 @@ function UserView() {
           <span className="flex flex-wrap items-center gap-2">
             {u.name && <span>{u.name}</span>}
             {u.role === "admin" && <Badge tone="blue">admin</Badge>}
-            {u.disabled && <Badge tone="red">đã khoá</Badge>}
-            <span>Tạo {fmtDate(u.created_at)} · Hoạt động {timeAgo(u.last_seen_at)}</span>
+            {u.disabled && <Badge tone="red">disabled</Badge>}
+            <span>Created {fmtDate(u.created_at)} · Last active {timeAgo(u.last_seen_at)}</span>
           </span>
         }
       />
@@ -84,32 +84,32 @@ function UserView() {
       )}
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
-          <Card title="Tài khoản">
+          <Card title="Account">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field
-                label="Gói dịch vụ"
+                label="Plan"
                 hint={
                   u.plan_expires_at
                     ? planExpired(u)
-                      ? `Đã hết hạn ${fmtDate(u.plan_expires_at, false)}, đang dùng gói mặc định.`
-                      : `Hết hạn ${fmtDate(u.plan_expires_at, false)}.`
-                    : "Không thời hạn."
+                      ? `Expired ${fmtDate(u.plan_expires_at, false)}, now on the default plan.`
+                      : `Expires ${fmtDate(u.plan_expires_at, false)}.`
+                    : "No expiry."
                 }
               >
                 <div className="flex items-center gap-2">
                   <Badge tone={planExpired(u) ? "red" : u.plan_id === "free" ? "neutral" : "green"}>{plan?.name ?? u.plan_id}</Badge>
                   <Button variant="ghost" className="px-3 py-1.5 text-xs" onClick={() => setModal("plan")}>
-                    <Icon name="plan" className="size-4" /> Đổi gói / thời hạn
+                    <Icon name="plan" className="size-4" /> Change plan / expiry
                   </Button>
                 </div>
               </Field>
-              <Field label="Vai trò">
+              <Field label="Role">
                 <Select
                   value={u.role}
                   disabled={busy !== "" || self}
-                  onChange={(e) => patch({ role: e.target.value as User["role"] }, "Đã đổi vai trò.")}
+                  onChange={(e) => patch({ role: e.target.value as User["role"] }, "Role changed.")}
                 >
-                  <option value="user">Người dùng</option>
+                  <option value="user">User</option>
                   <option value="admin">Admin</option>
                 </Select>
               </Field>
@@ -117,10 +117,10 @@ function UserView() {
             <div className="mt-4 border-t border-line pt-3">
               <Toggle
                 checked={u.disabled}
-                onChange={(v) => !self && patch({ disabled: v }, v ? "Đã khoá tài khoản và đăng xuất mọi thiết bị." : "Đã mở khoá.")}
+                onChange={(v) => !self && patch({ disabled: v }, v ? "Account disabled and all devices signed out." : "Account enabled.")}
                 label={
                   <span>
-                    Khoá tài khoản <span className="text-dim">— chặn đăng nhập và sync</span>
+                    Disable account <span className="text-dim">— blocks sign-in and sync</span>
                   </span>
                 }
               />
@@ -128,32 +128,32 @@ function UserView() {
           </Card>
 
           <Card
-            title={`Phiên đăng nhập (${d.sessions.length})`}
+            title={`Sessions (${d.sessions.length})`}
             actions={
               d.sessions.length > 0 && (
                 <Button
                   variant="ghost"
                   busy={busy === "revoke"}
-                  onClick={() => run("revoke", () => api(`/users/${id}/revoke-sessions`, { method: "POST" }), "Đã đăng xuất mọi thiết bị.")}
+                  onClick={() => run("revoke", () => api(`/users/${id}/revoke-sessions`, { method: "POST" }), "All devices signed out.")}
                 >
-                  Đăng xuất tất cả
+                  Sign out all
                 </Button>
               )
             }
           >
             {d.sessions.length === 0 ? (
-              <Empty>Không có phiên nào đang hoạt động.</Empty>
+              <Empty>No active sessions.</Empty>
             ) : (
               <ul className="divide-y divide-line/60">
                 {d.sessions.map((s) => (
                   <li key={s.id} className="flex items-center justify-between gap-3 py-3 text-sm">
                     <div>
                       <div className="font-medium">
-                        {s.kind === "console" ? "Console" : s.device_name || "Thiết bị không tên"}{" "}
+                        {s.kind === "console" ? "Console" : s.device_name || "Unnamed device"}{" "}
                         {s.platform && <span className="text-dim">· {s.platform}</span>}
                       </div>
                       <div className="text-xs text-dim">
-                        {s.auth_method} · {s.ip} · tạo {fmtDate(s.created_at)}
+                        {s.auth_method} · {s.ip} · created {fmtDate(s.created_at)}
                       </div>
                     </div>
                     <span className="text-xs text-dim">{timeAgo(s.last_used_at)}</span>
@@ -165,11 +165,11 @@ function UserView() {
         </div>
 
         <div className="space-y-4">
-          <Card title="Đăng nhập bằng">
+          <Card title="Sign-in methods">
             <ul className="space-y-2 text-sm">
               <li className="flex justify-between">
-                <span>Email + mật khẩu</span>
-                <span className="text-dim">{d.has_password ? "đã đặt" : "chưa đặt"}</span>
+                <span>Email + password</span>
+                <span className="text-dim">{d.has_password ? "set" : "not set"}</span>
               </li>
               {d.identities.map((i) => (
                 <li key={i.provider} className="flex justify-between gap-2">
@@ -179,32 +179,32 @@ function UserView() {
               ))}
             </ul>
             <Button variant="ghost" className="mt-4 w-full" onClick={() => setModal("password")}>
-              <Icon name="key" className="size-4" /> Đặt lại mật khẩu
+              <Icon name="key" className="size-4" /> Reset password
             </Button>
           </Card>
           <Card title="Vault (E2EE)">
             {d.vault.exists ? (
               <div className="space-y-1 text-sm">
-                <div>{d.vault.items} mục đã mã hoá</div>
-                <div className="text-dim">Cập nhật {timeAgo(d.vault.updated_at)}</div>
-                <p className="pt-2 text-xs text-dim">Server không thể đọc nội dung vault.</p>
+                <div>{d.vault.items} encrypted items</div>
+                <div className="text-dim">Updated {timeAgo(d.vault.updated_at)}</div>
+                <p className="pt-2 text-xs text-dim">The server cannot read vault contents.</p>
               </div>
             ) : (
-              <p className="text-sm text-dim">Chưa bật sync.</p>
+              <p className="text-sm text-dim">Sync is not enabled.</p>
             )}
           </Card>
           {!self && (
-            <Card title="Vùng nguy hiểm">
-              <p className="mb-3 text-sm text-dim">Xoá tài khoản cùng toàn bộ dữ liệu đã sync. Không thể hoàn tác.</p>
+            <Card title="Danger zone">
+              <p className="mb-3 text-sm text-dim">Deletes the account and all synced data. This cannot be undone.</p>
               <Button
                 variant="danger"
                 busy={busy === "delete"}
                 onClick={() => {
-                  if (!confirm(`Xoá vĩnh viễn ${u.email}?`)) return;
-                  run("delete", () => api(`/users/${id}`, { method: "DELETE" }), "Đã xoá.").then(() => router.replace("/users/"));
+                  if (!confirm(`Permanently delete ${u.email}?`)) return;
+                  run("delete", () => api(`/users/${id}`, { method: "DELETE" }), "Deleted.").then(() => router.replace("/users/"));
                 }}
               >
-                Xoá tài khoản
+                Delete account
               </Button>
             </Card>
           )}

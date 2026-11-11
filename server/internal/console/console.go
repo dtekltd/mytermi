@@ -52,5 +52,5 @@ func Handler() http.Handler {
 }
 
 const notBuilt = `<!doctype html><meta charset="utf-8"><title>MyTermi console</title>
-<p style="font-family:sans-serif;padding:2rem">Console chưa được build vào binary này.
-Chạy <code>make build</code> trong thư mục <code>server/</code> (hoặc dùng Docker image).</p>`
+<p style="font-family:sans-serif;padding:2rem">The console is not built into this binary.
+Run <code>make build</code> in the <code>server/</code> directory (or use the Docker image).</p>`

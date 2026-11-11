@@ -22,18 +22,18 @@ export async function api<T = unknown>(path: string, init: { method?: string; bo
   return data as T;
 }
 
-// Vietnamese messages for API error codes shown in the console.
+// Messages for API error codes shown in the console.
 const messages: Record<string, string> = {
-  invalid_credentials: "Sai email hoặc mật khẩu.",
-  forbidden: "Tài khoản này không có quyền quản trị.",
-  account_disabled: "Tài khoản đã bị khoá.",
-  rate_limited: "Thử quá nhiều lần, vui lòng đợi một lát.",
-  last_admin: "Không thể hạ quyền hoặc khoá admin cuối cùng.",
-  self_delete: "Không thể tự xoá tài khoản của chính mình trong console.",
-  plan_default: "Không thể xoá hoặc bỏ mặc định gói đang là mặc định. Hãy đặt gói khác làm mặc định trước.",
-  plan_in_use: "Gói đang có người dùng. Chuyển họ sang gói khác trước.",
-  email_not_configured: "Chưa cấu hình SMTP. Nhập và lưu cấu hình SMTP trước.",
-  email_send_failed: "Gửi email thất bại",
+  invalid_credentials: "Wrong email or password.",
+  forbidden: "This account does not have admin access.",
+  account_disabled: "This account is disabled.",
+  rate_limited: "Too many attempts. Please wait a moment.",
+  last_admin: "You can't demote or disable the last admin.",
+  self_delete: "You can't delete your own account from the console.",
+  plan_default: "The default plan can't be deleted or unset. Make another plan the default first.",
+  plan_in_use: "This plan still has users. Move them to another plan first.",
+  email_not_configured: "SMTP is not configured. Enter and save the SMTP settings first.",
+  email_send_failed: "Failed to send email",
 };
 
 export function errorText(e: unknown): string {
@@ -119,8 +119,8 @@ export function fmtDate(s: string | null | undefined, withTime = true): string {
   if (!s) return "—";
   const d = new Date(s);
   return withTime
-    ? d.toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })
-    : d.toLocaleDateString("vi-VN");
+    ? d.toLocaleString("en-US", { dateStyle: "short", timeStyle: "short" })
+    : d.toLocaleDateString("en-US");
 }
 
 /** Plan end date has passed (the default plan applies). */
@@ -129,11 +129,11 @@ export function planExpired(u: Pick<User, "plan_expires_at">): boolean {
 }
 
 export function timeAgo(s: string | null | undefined): string {
-  if (!s) return "chưa";
+  if (!s) return "never";
   const sec = (Date.now() - new Date(s).getTime()) / 1000;
-  if (sec < 60) return "vừa xong";
-  if (sec < 3600) return `${Math.floor(sec / 60)} phút trước`;
-  if (sec < 86400) return `${Math.floor(sec / 3600)} giờ trước`;
-  if (sec < 30 * 86400) return `${Math.floor(sec / 86400)} ngày trước`;
+  if (sec < 60) return "just now";
+  if (sec < 3600) return `${Math.floor(sec / 60)} min ago`;
+  if (sec < 86400) return `${Math.floor(sec / 3600)} h ago`;
+  if (sec < 30 * 86400) return `${Math.floor(sec / 86400)} d ago`;
   return fmtDate(s, false);
 }

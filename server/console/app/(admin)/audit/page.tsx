@@ -8,19 +8,19 @@ import { api, errorText, fmtDate, type AuditEntry } from "@/lib/api";
 const PAGE = 50;
 
 const labels: Record<string, string> = {
-  "user.signup": "Đăng ký",
-  "user.password_set": "Đặt mật khẩu",
-  "user.deleted_self": "Tự xoá tài khoản",
-  "vault.created": "Tạo vault",
-  "vault.rewrapped": "Đổi mật khẩu vault",
+  "user.signup": "Sign up",
+  "user.password_set": "Set password",
+  "user.deleted_self": "Deleted own account",
+  "vault.created": "Created vault",
+  "vault.rewrapped": "Changed vault password",
   "vault.reset": "Reset vault",
-  "admin.login": "Admin đăng nhập",
-  "admin.user_update": "Sửa người dùng",
-  "admin.user_delete": "Xoá người dùng",
-  "admin.user_revoke_sessions": "Đăng xuất mọi thiết bị",
-  "admin.plan_save": "Lưu gói",
-  "admin.plan_delete": "Xoá gói",
-  "admin.settings_update": "Sửa cấu hình",
+  "admin.login": "Admin sign-in",
+  "admin.user_update": "Updated user",
+  "admin.user_delete": "Deleted user",
+  "admin.user_revoke_sessions": "Signed out all devices",
+  "admin.plan_save": "Saved plan",
+  "admin.plan_delete": "Deleted plan",
+  "admin.settings_update": "Updated settings",
 };
 
 function meta(m: Record<string, unknown>) {
@@ -42,22 +42,22 @@ export default function AuditPage() {
 
   return (
     <>
-      <PageTitle title="Nhật ký" subtitle="Các thao tác quan trọng của người dùng và admin" />
+      <PageTitle title="Audit log" subtitle="Important user and admin actions" />
       {error && <Alert>{error}</Alert>}
       <Card>
         {!data ? (
           <Spinner />
         ) : data.entries.length === 0 ? (
-          <Empty>Chưa có gì.</Empty>
+          <Empty>Nothing yet.</Empty>
         ) : (
           <div className="-mx-5 overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-dim">
-                  <th className="px-5 py-2 font-medium">Thời gian</th>
-                  <th className="px-3 py-2 font-medium">Thao tác</th>
-                  <th className="px-3 py-2 font-medium">Người thực hiện</th>
-                  <th className="px-3 py-2 font-medium">Đối tượng</th>
+                  <th className="px-5 py-2 font-medium">Time</th>
+                  <th className="px-3 py-2 font-medium">Action</th>
+                  <th className="px-3 py-2 font-medium">Actor</th>
+                  <th className="px-3 py-2 font-medium">Target</th>
                   <th className="px-3 py-2 font-medium">IP</th>
                 </tr>
               </thead>
@@ -81,10 +81,10 @@ export default function AuditPage() {
         {data && data.total > PAGE && (
           <div className="mt-4 flex justify-end gap-2">
             <Button variant="ghost" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE))}>
-              Mới hơn
+              Newer
             </Button>
             <Button variant="ghost" disabled={offset + PAGE >= data.total} onClick={() => setOffset(offset + PAGE)}>
-              Cũ hơn
+              Older
             </Button>
           </div>
         )}

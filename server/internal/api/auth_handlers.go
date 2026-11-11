@@ -23,7 +23,7 @@ const (
 
 type deviceInfo struct {
 	ID       string `json:"id"`       // stable per install
-	Name     string `json:"name"`     // "iPhone của Tuấn"
+	Name     string `json:"name"`     // "Tuan's iPhone"
 	Platform string `json:"platform"` // ios | android
 }
 
@@ -117,17 +117,15 @@ func (s *Server) handleEmailStart(w http.ResponseWriter, r *http.Request) error 
 }
 
 func codeEmail(app, to, code string) mailer.Message {
-	text := fmt.Sprintf("Mã xác thực %s của bạn là: %s\n\nMã có hiệu lực trong 10 phút. "+
-		"Nếu bạn không yêu cầu mã này, hãy bỏ qua email.\n\n"+
-		"Your %s verification code is %s (valid for 10 minutes).", app, code, app, code)
+	text := fmt.Sprintf("Your %s verification code is: %s\n\nThe code is valid for 10 minutes. "+
+		"If you did not request this code, you can ignore this email.", app, code)
 	h := html.EscapeString
 	body := fmt.Sprintf(`<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:420px;margin:auto;padding:24px">
 <h2 style="margin:0 0 16px">%s</h2>
-<p>Mã xác thực của bạn:</p>
+<p>Your verification code:</p>
 <p style="font-size:32px;font-weight:700;letter-spacing:8px;margin:16px 0">%s</p>
-<p style="color:#666">Mã có hiệu lực trong 10 phút. Nếu bạn không yêu cầu mã này, hãy bỏ qua email.</p>
-<p style="color:#999;font-size:12px">Your verification code is %s (valid for 10 minutes).</p></div>`, h(app), h(code), h(code))
-	return mailer.Message{To: to, Subject: fmt.Sprintf("%s là mã xác thực %s của bạn", code, app), Text: text, HTML: body}
+<p style="color:#666">The code is valid for 10 minutes. If you did not request this code, you can ignore this email.</p></div>`, h(app), h(code))
+	return mailer.Message{To: to, Subject: fmt.Sprintf("%s is your %s verification code", code, app), Text: text, HTML: body}
 }
 
 func (s *Server) handleEmailVerify(w http.ResponseWriter, r *http.Request) error {

@@ -48,7 +48,7 @@ func TestPlanExpiry(t *testing.T) {
 	}
 
 	// A PATCH without the field keeps the end date.
-	e.expect(e.do(console, "PATCH", path, "", map[string]any{"name": "Tuấn"}), 200, "")
+	e.expect(e.do(console, "PATCH", path, "", map[string]any{"name": "Tuan"}), 200, "")
 	if _, exp := plan(); exp == nil {
 		t.Fatal("end date lost by an unrelated update")
 	}

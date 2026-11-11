@@ -81,4 +81,4 @@ jobs:
             Download **MyTermi-windows-x64-${{ env.VERSION }}.zip**, unzip it anywhere and run `mytermi.exe`.
             Windows may show a SmartScreen warning because the app isn't code-signed yet: choose *More info → Run anyway*.
 
-            Default sync server: `${{ env.API_URL }}` (change it in the app under Settings → Sign in → Server).
+            Default sync server: `${{ env.API_URL }}` (change it in the app under Settings → Sign in / Create account → Sync server).
