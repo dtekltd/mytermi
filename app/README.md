@@ -34,10 +34,11 @@ run   [dev|prod|build] [android|windows] [extra flutter args...]   # Windows (ru
 - `run windows` starts the app on this PC. `run build windows` writes
   `build\windows\x64\runner\Release\` (the app folder: `mytermi.exe` plus its DLLs and `data\`) and
   `build\windows\MyTermi-windows-x64.zip`. To install, unzip anywhere and run `mytermi.exe`.
-- **Without a Windows PC:** the GitHub Actions workflow `.github/workflows/windows.yml` builds the
-  zip when you start it by hand (Actions tab → *Windows app* → **Run workflow**; the zip is under
-  the run's Artifacts) or when you push a `v*` tag (the zip is also attached to a GitHub Release). Set the repository
-  variable `MYTERMI_API_URL` to bake in your sync server.
+- **Releases:** the GitHub Actions workflow `.github/workflows/windows.yml` builds the app and
+  publishes a GitHub Release with `MyTermi-windows-x64-<version>.zip`. Start it by pushing a tag
+  (`git tag v1.0.1 && git push origin v1.0.1`) or with **Run workflow** in the Actions tab (enter the
+  version; the tag is created for you). The build's default sync server is the `api_url` input, else
+  the repository variable `MYTERMI_API_URL`, else `https://mytermi.vanminhso.vn`.
 - On desktop the terminal uses the mouse (drag to select, wheel to scroll, right click copies the
   selection or pastes, **Enter** copies the selection) and the keyboard: **Ctrl+Shift+C / Ctrl+Shift+V** copy and paste (plain
   Ctrl+C/V/A go to the shell), **Ctrl+= / Ctrl+- / Ctrl+0** change the font size. The on-screen
