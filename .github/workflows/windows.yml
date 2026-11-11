@@ -36,12 +36,13 @@ jobs:
       VERSION: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
       API_URL: ${{ inputs.api_url || vars.MYTERMI_API_URL || 'https://mytermi.vanminhso.vn' }}
     steps:
+      # Checkout first: every run step uses working-directory app/.
+      - uses: actions/checkout@v4
+
       - name: Check version
         shell: pwsh
         run: |
           if ($env:VERSION -notmatch '^v\d+\.\d+\.\d+$') { throw "Version must look like v1.2.3, got '$env:VERSION'" }
-
-      - uses: actions/checkout@v4
 
       - uses: subosito/flutter-action@v2
         with:
