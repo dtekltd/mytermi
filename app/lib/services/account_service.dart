@@ -24,6 +24,7 @@ class Account {
       planName = (j['plan']?['name'] ?? 'Free') as String,
       maxDevices = (j['plan']?['max_devices'] ?? 0) as int,
       syncEnabled = (j['plan']?['sync_enabled'] ?? true) as bool,
+      planExpiresAt = DateTime.tryParse((j['plan']?['expires_at'] ?? '') as String)?.toLocal(),
       hasVault = (j['has_vault'] ?? false) as bool,
       raw = j;
 
@@ -31,6 +32,9 @@ class Account {
   final bool hasPassword, syncEnabled, hasVault;
   final List<String> providers;
   final int maxDevices;
+
+  /// When the plan ends (the server then applies the default plan); null = no end.
+  final DateTime? planExpiresAt;
   final Map<String, dynamic> raw;
 }
 

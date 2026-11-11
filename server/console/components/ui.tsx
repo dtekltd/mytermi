@@ -1,6 +1,6 @@
 "use client";
 
-import { type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
+import { type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, useEffect } from "react";
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
@@ -151,5 +151,75 @@ export function Providers({ list }: { list: string[] }) {
         </Badge>
       ))}
     </span>
+  );
+}
+
+/** Centered dialog with a backdrop. Esc or a backdrop click closes it. */
+export function Modal({
+  title,
+  onClose,
+  children,
+  footer,
+}: {
+  title: ReactNode;
+  onClose: () => void;
+  children: ReactNode;
+  footer?: ReactNode;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center" onMouseDown={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        onMouseDown={(e) => e.stopPropagation()}
+        className="w-full max-w-md rounded-2xl bg-surface p-5 shadow-xl ring-1 ring-line/60"
+      >
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold">{title}</h2>
+          <IconButton label="Đóng" onClick={onClose}>
+            <Icon name="close" />
+          </IconButton>
+        </div>
+        <div className="space-y-4">{children}</div>
+        {footer && <div className="mt-5 flex justify-end gap-2">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+/** Square icon-only button; `label` is the tooltip and accessible name. */
+export function IconButton({ label, className, ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      {...rest}
+      className={cx(
+        "inline-flex size-8 items-center justify-center rounded-lg text-dim transition hover:bg-surface-hi hover:text-fg disabled:opacity-50",
+        className,
+      )}
+    />
+  );
+}
+
+const iconPaths = {
+  key: "M15.75 5.25a3 3 0 0 1 3 3m3 0a6 6 0 0 1-7.03 5.91c-.57-.1-1.17.03-1.58.44L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.82c0-.6.24-1.17.66-1.59l6.41-6.41c.41-.41.54-1.01.44-1.58A6 6 0 1 1 21.75 8.25Z",
+  plan: "M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z",
+  close: "M6 18 18 6M6 6l12 12",
+  copy: "M15.75 17.25v3.38c0 .62-.5 1.12-1.12 1.12h-9.76c-.62 0-1.12-.5-1.12-1.12V7.88c0-.62.5-1.12 1.12-1.12H8.25m7.5 10.5h3.38c.62 0 1.12-.5 1.12-1.12V11.25c0-4.46-3.24-8.16-7.5-8.87a9.06 9.06 0 0 0-1.5-.13H9.38c-.62 0-1.12.5-1.12 1.12v3.38m7.5 10.5h-6.38c-.62 0-1.12-.5-1.12-1.12V6.75",
+  dice: "M16.02 9.35h4.99v-.001M2.99 19.64v-5m0 0h5m-5 0 3.18 3.18a8.25 8.25 0 0 0 13.8-3.7M4.03 9.87a8.25 8.25 0 0 1 13.8-3.7l3.18 3.18m0-4.99v4.99",
+} as const;
+
+export function Icon({ name, className }: { name: keyof typeof iconPaths; className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" className={cx("size-[18px]", className)} aria-hidden="true">
+      <path d={iconPaths[name]} />
+    </svg>
   );
 }

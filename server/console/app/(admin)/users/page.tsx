@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { Alert, Badge, Button, Card, Empty, Input, PageTitle, Providers, Select, Spinner } from "@/components/ui";
-import { api, errorText, timeAgo, type Plan, type UserListItem } from "@/lib/api";
+import { Alert, Badge, Button, Card, Empty, Icon, IconButton, Input, PageTitle, Providers, Select, Spinner } from "@/components/ui";
+import { PlanModal, ResetPasswordModal } from "@/components/user-modals";
+import { api, errorText, fmtDate, planExpired, timeAgo, type Plan, type UserListItem } from "@/lib/api";
 
 const PAGE = 25;
 
@@ -15,6 +16,9 @@ export default function UsersPage() {
   const [data, setData] = useState<{ users: UserListItem[]; total: number } | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [modal, setModal] = useState<{ kind: "password" | "plan"; user: UserListItem } | null>(null);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     api<{ plans: Plan[] }>("/plans").then((r) => setPlans(r.plans)).catch(() => {});
@@ -31,7 +35,13 @@ export default function UsersPage() {
         .catch((e) => setError(errorText(e)));
     }, 250);
     return () => clearTimeout(t);
-  }, [q, plan, offset]);
+  }, [q, plan, offset, reload]);
+
+  const done = (msg: string) => {
+    setModal(null);
+    setNotice(msg);
+    setReload((n) => n + 1);
+  };
 
   const planName = (id: string) => plans.find((p) => p.id === id)?.name ?? id;
 
@@ -64,6 +74,11 @@ export default function UsersPage() {
           </Select>
         </div>
         {error && <Alert>{error}</Alert>}
+        {notice && (
+          <div className="mb-4">
+            <Alert tone="green">{notice}</Alert>
+          </div>
+        )}
         {!data ? (
           <Spinner />
         ) : data.users.length === 0 ? (
@@ -78,6 +93,7 @@ export default function UsersPage() {
                   <th className="px-3 py-2 font-medium">Gói</th>
                   <th className="px-3 py-2 font-medium">Sync</th>
                   <th className="px-3 py-2 font-medium">Hoạt động</th>
+                  <th className="px-5 py-2" />
                 </tr>
               </thead>
               <tbody>
@@ -97,10 +113,25 @@ export default function UsersPage() {
                       <Providers list={u.providers} />
                     </td>
                     <td className="px-3 py-3">
-                      <Badge tone={u.plan_id === "free" ? "neutral" : "green"}>{planName(u.plan_id)}</Badge>
+                      <Badge tone={planExpired(u) ? "red" : u.plan_id === "free" ? "neutral" : "green"}>{planName(u.plan_id)}</Badge>
+                      {u.plan_expires_at && (
+                        <div className={`mt-0.5 text-xs ${planExpired(u) ? "text-red-600 dark:text-red-400" : "text-dim"}`}>
+                          {planExpired(u) ? "hết hạn" : "đến"} {fmtDate(u.plan_expires_at, false)}
+                        </div>
+                      )}
                     </td>
                     <td className="px-3 py-3 text-dim">{u.has_vault ? `${u.items} mục` : "—"}</td>
                     <td className="px-3 py-3 text-dim">{timeAgo(u.last_seen_at)}</td>
+                    <td className="px-5 py-3">
+                      <div className="flex justify-end gap-1">
+                        <IconButton label="Gói & thời hạn" onClick={() => setModal({ kind: "plan", user: u })}>
+                          <Icon name="plan" />
+                        </IconButton>
+                        <IconButton label="Đặt lại mật khẩu" onClick={() => setModal({ kind: "password", user: u })}>
+                          <Icon name="key" />
+                        </IconButton>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -123,6 +154,8 @@ export default function UsersPage() {
           </div>
         )}
       </Card>
+      {modal?.kind === "password" && <ResetPasswordModal user={modal.user} onClose={() => setModal(null)} onDone={done} />}
+      {modal?.kind === "plan" && <PlanModal user={modal.user} plans={plans} onClose={() => setModal(null)} onDone={done} />}
     </>
   );
 }

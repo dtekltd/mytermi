@@ -327,7 +327,7 @@ func (s *Server) signIn(w http.ResponseWriter, r *http.Request, u *db.User, meth
 	if u.Disabled {
 		return errDisabled
 	}
-	plan, err := s.db.PlanByID(ctx, u.PlanID)
+	plan, err := s.db.EffectivePlan(ctx, u)
 	if err != nil {
 		return err
 	}

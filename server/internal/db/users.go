@@ -21,6 +21,7 @@ type User struct {
 	Name          string     `json:"name"`
 	Role          string     `json:"role"`
 	PlanID        string     `json:"plan_id"`
+	PlanExpiresAt *time.Time `json:"plan_expires_at"`
 	Disabled      bool       `json:"disabled"`
 	CreatedAt     time.Time  `json:"created_at"`
 	LastSeenAt    *time.Time `json:"last_seen_at"`
@@ -28,11 +29,11 @@ type User struct {
 
 func (u *User) HasPassword() bool { return u.PasswordHash != nil && *u.PasswordHash != "" }
 
-const userCols = `id, email, email_verified, password_hash, name, role, plan_id, disabled, created_at, last_seen_at`
+const userCols = `id, email, email_verified, password_hash, name, role, plan_id, plan_expires_at, disabled, created_at, last_seen_at`
 
 func scanUser(row pgx.Row) (*User, error) {
 	var u User
-	err := row.Scan(&u.ID, &u.Email, &u.EmailVerified, &u.PasswordHash, &u.Name, &u.Role, &u.PlanID,
+	err := row.Scan(&u.ID, &u.Email, &u.EmailVerified, &u.PasswordHash, &u.Name, &u.Role, &u.PlanID, &u.PlanExpiresAt,
 		&u.Disabled, &u.CreatedAt, &u.LastSeenAt)
 	if err != nil {
 		return nil, notFound(err)
@@ -84,12 +85,45 @@ func (d *DB) DeleteUser(ctx context.Context, userID string) error {
 	return err
 }
 
+// PlanExpired reports whether the user's plan has an end date in the past.
+func (u *User) PlanExpired(now time.Time) bool {
+	return u.PlanExpiresAt != nil && !u.PlanExpiresAt.After(now)
+}
+
 // UserUpdate holds optional fields an admin (or the user, for Name) can change.
 type UserUpdate struct {
-	Name     *string `json:"name"`
-	Role     *string `json:"role"`
-	PlanID   *string `json:"plan_id"`
-	Disabled *bool   `json:"disabled"`
+	Name          *string      `json:"name"`
+	Role          *string      `json:"role"`
+	PlanID        *string      `json:"plan_id"`
+	PlanExpiresAt OptionalTime `json:"plan_expires_at"` // null clears the end date
+	Disabled      *bool        `json:"disabled"`
+}
+
+// OptionalTime tells "field absent" (Set false) apart from "null" (Set, nil).
+type OptionalTime struct {
+	Set   bool
+	Value *time.Time
+}
+
+func (o *OptionalTime) UnmarshalJSON(b []byte) error {
+	o.Set = true
+	if string(b) == "null" {
+		o.Value = nil
+		return nil
+	}
+	var t time.Time
+	if err := t.UnmarshalJSON(b); err != nil {
+		return err
+	}
+	o.Value = &t
+	return nil
+}
+
+func (o OptionalTime) MarshalJSON() ([]byte, error) {
+	if o.Value == nil {
+		return []byte("null"), nil
+	}
+	return o.Value.MarshalJSON()
 }
 
 func (d *DB) UpdateUser(ctx context.Context, id string, up UserUpdate) (*User, error) {
@@ -99,8 +133,10 @@ func (d *DB) UpdateUser(ctx context.Context, id string, up UserUpdate) (*User, e
 			role     = COALESCE($3, role),
 			plan_id  = COALESCE($4, plan_id),
 			disabled = COALESCE($5, disabled),
+			plan_expires_at = CASE WHEN $6 THEN $7 ELSE plan_expires_at END,
 			updated_at = now()
-		WHERE id = $1 RETURNING `+userCols, id, up.Name, up.Role, up.PlanID, up.Disabled))
+		WHERE id = $1 RETURNING `+userCols, id, up.Name, up.Role, up.PlanID, up.Disabled,
+		up.PlanExpiresAt.Set, up.PlanExpiresAt.Value))
 }
 
 type UserListItem struct {
@@ -145,7 +181,7 @@ func (d *DB) ListUsers(ctx context.Context, f UserFilter) ([]UserListItem, int, 
 	}
 	args = append(args, f.Limit, f.Offset)
 	rows, err := d.Pool.Query(ctx, fmt.Sprintf(`
-		SELECT u.id, u.email, u.email_verified, u.password_hash, u.name, u.role, u.plan_id, u.disabled,
+		SELECT u.id, u.email, u.email_verified, u.password_hash, u.name, u.role, u.plan_id, u.plan_expires_at, u.disabled,
 		       u.created_at, u.last_seen_at,
 		       COALESCE((SELECT array_agg(provider ORDER BY provider) FROM identities i WHERE i.user_id = u.id), '{}'),
 		       EXISTS (SELECT 1 FROM vaults v WHERE v.user_id = u.id),
@@ -159,7 +195,7 @@ func (d *DB) ListUsers(ctx context.Context, f UserFilter) ([]UserListItem, int, 
 	for rows.Next() {
 		var it UserListItem
 		u := &it.User
-		if err := rows.Scan(&u.ID, &u.Email, &u.EmailVerified, &u.PasswordHash, &u.Name, &u.Role, &u.PlanID,
+		if err := rows.Scan(&u.ID, &u.Email, &u.EmailVerified, &u.PasswordHash, &u.Name, &u.Role, &u.PlanID, &u.PlanExpiresAt,
 			&u.Disabled, &u.CreatedAt, &u.LastSeenAt, &it.Providers, &it.HasVault, &it.Items); err != nil {
 			return nil, 0, err
 		}
@@ -263,6 +299,18 @@ func (d *DB) Plans(ctx context.Context) ([]Plan, error) {
 
 func (d *DB) PlanByID(ctx context.Context, id string) (*Plan, error) {
 	return scanPlan(d.Pool.QueryRow(ctx, `SELECT `+planCols+` FROM plans WHERE id = $1`, id))
+}
+
+// EffectivePlan is the plan whose limits apply to u right now: the assigned
+// plan, or the default plan once the assigned plan's end date has passed.
+func (d *DB) EffectivePlan(ctx context.Context, u *User) (*Plan, error) {
+	if u.PlanExpired(time.Now()) {
+		p, err := scanPlan(d.Pool.QueryRow(ctx, `SELECT `+planCols+` FROM plans WHERE is_default LIMIT 1`))
+		if err == nil || !errors.Is(err, ErrNotFound) {
+			return p, err
+		}
+	}
+	return d.PlanByID(ctx, u.PlanID)
 }
 
 // SavePlan creates or updates a plan; making it default clears the old default.

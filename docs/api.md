@@ -44,7 +44,7 @@ replaces that device's old session.
 
 | Method & path | Body | Notes |
 |---|---|---|
-| `GET /me` | | `{id, email, email_verified, name, role, has_password, providers[], plan: {id, name, max_devices, sync_enabled}, has_vault, created_at}` |
+| `GET /me` | | `{id, email, email_verified, name, role, has_password, providers[], plan: {id, name, max_devices, sync_enabled, expires_at}, has_vault, created_at}`. `plan` is the plan in effect: once an assigned plan's `expires_at` passes, the default plan applies and `expires_at` is null. |
 | `PATCH /me` | `{name}` | |
 | `POST /me/password` | `{new_password, current_password?}` | `current_password` is required to change an existing password. It is not required if this session signed in with an email code less than 15 minutes ago (forgot-password flow). Errors: `weak_password` (fewer than 8 characters), `invalid_credentials` |
 | `DELETE /me` | `{confirm: "<account email>"}` | Deletes the account and all data. Error: `last_admin` |
@@ -80,7 +80,8 @@ replaces that device's old session.
 | `GET /admin/stats` | Totals, 7-day new and active users, devices, vaults, items, users by plan and by sign-in method, 30-day daily sign-ups |
 | `GET /admin/users?q=&plan=&role=&limit=&offset=` | `{users, total}` |
 | `GET /admin/users/{id}` | `{user, has_password, identities, sessions, vault: {exists, items, ...}}` |
-| `PATCH /admin/users/{id}` `{plan_id?, role?, disabled?, name?}` | Disabling also revokes the user's sessions. Error: `last_admin` |
+| `PATCH /admin/users/{id}` `{plan_id?, plan_expires_at?, role?, disabled?, name?}` | `plan_expires_at` is an RFC 3339 time, or `null` for no end date; leaving it out keeps the current one. Disabling also revokes the user's sessions. Error: `last_admin` |
+| `POST /admin/users/{id}/password` `{password, revoke_sessions?}` | Sets the account password (204). The vault password is unaffected. Error: `weak_password` |
 | `DELETE /admin/users/{id}` | Error: `self_delete` |
 | `POST /admin/users/{id}/revoke-sessions` | |
 | `GET /admin/plans`, `PUT /admin/plans/{id}`, `DELETE /admin/plans/{id}` | Errors: `plan_default`, `plan_in_use` |

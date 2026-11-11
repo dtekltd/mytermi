@@ -218,9 +218,11 @@ func (s *Server) handlePatchUser(w http.ResponseWriter, r *http.Request, a *auth
 	if up.Disabled != nil && *up.Disabled {
 		_ = s.db.RevokeAllSessions(ctx, u.ID)
 	}
-	s.db.Audit(ctx, a.User.ID, "admin.user_update", u.Email, map[string]any{
-		"role": up.Role, "plan_id": up.PlanID, "disabled": up.Disabled, "name": up.Name,
-	}, s.clientIP(r))
+	details := map[string]any{"role": up.Role, "plan_id": up.PlanID, "disabled": up.Disabled, "name": up.Name}
+	if up.PlanExpiresAt.Set {
+		details["plan_expires_at"] = up.PlanExpiresAt.Value
+	}
+	s.db.Audit(ctx, a.User.ID, "admin.user_update", u.Email, details, s.clientIP(r))
 	writeJSON(w, http.StatusOK, map[string]any{"user": u})
 	return nil
 }
@@ -253,6 +255,43 @@ func (s *Server) handleRevokeUserSessions(w http.ResponseWriter, r *http.Request
 		return err
 	}
 	s.db.Audit(ctx, a.User.ID, "admin.user_revoke_sessions", u.Email, nil, s.clientIP(r))
+	w.WriteHeader(http.StatusNoContent)
+	return nil
+}
+
+// handleAdminSetPassword sets a user's account password (for users who are
+// locked out). It doesn't touch the vault: synced data stays encrypted with the
+// user's separate vault password.
+func (s *Server) handleAdminSetPassword(w http.ResponseWriter, r *http.Request, a *authCtx) error {
+	var req struct {
+		Password       string `json:"password"`
+		RevokeSessions bool   `json:"revoke_sessions"`
+	}
+	if err := decode(r, &req); err != nil {
+		return err
+	}
+	if err := auth.ValidatePassword(req.Password); err != nil {
+		return errf(http.StatusBadRequest, "weak_password", err.Error())
+	}
+	ctx := r.Context()
+	u, err := s.db.UserByID(ctx, r.PathValue("id"))
+	if err != nil {
+		return notFoundAs(err, errNotFound)
+	}
+	hash, err := auth.HashPassword(req.Password)
+	if err != nil {
+		return err
+	}
+	if err := s.db.SetPassword(ctx, u.ID, hash); err != nil {
+		return err
+	}
+	if req.RevokeSessions && u.ID != a.User.ID {
+		if err := s.db.RevokeAllSessions(ctx, u.ID); err != nil {
+			return err
+		}
+	}
+	s.db.Audit(ctx, a.User.ID, "admin.user_set_password", u.Email,
+		map[string]any{"revoke_sessions": req.RevokeSessions}, s.clientIP(r))
 	w.WriteHeader(http.StatusNoContent)
 	return nil
 }

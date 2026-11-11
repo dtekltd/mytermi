@@ -2,18 +2,13 @@ package api_test
 
 import (
 	"bufio"
-	"context"
 	"net"
-	"net/http"
-	"net/http/cookiejar"
 	"strconv"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/dtekltd/mytermi/server/internal/api"
-	"github.com/dtekltd/mytermi/server/internal/auth"
-	"github.com/dtekltd/mytermi/server/internal/db"
 )
 
 // fakeSMTP accepts one plain-SMTP conversation per connection and records the
@@ -89,15 +84,7 @@ func (f *fakeSMTP) got() []string {
 func TestTestEmailUsesUnsavedFormAndReportsDevLog(t *testing.T) {
 	e := setup(t)
 	e.api.Mailer = nil // use the real SMTP / dev-log senders
-	ctx := context.Background()
-	admin, _ := e.db.CreateUser(ctx, "admin@example.com", "Admin", true)
-	role := "admin"
-	e.db.UpdateUser(ctx, admin.ID, db.UserUpdate{Role: &role})
-	h, _ := auth.HashPassword("admin-pass-1")
-	e.db.SetPassword(ctx, admin.ID, h)
-	jar, _ := cookiejar.New(nil)
-	console := &http.Client{Jar: jar}
-	e.expect(e.do(console, "POST", "/api/v1/admin/login", "", map[string]any{"email": "admin@example.com", "password": "admin-pass-1"}), 200, "")
+	console := e.consoleAdmin()
 
 	// Nothing saved, not dev: there is no way to send.
 	e.expect(e.do(console, "POST", "/api/v1/admin/settings/test-email", "", map[string]any{"to": "ops@example.com"}), 400, "email_not_configured")

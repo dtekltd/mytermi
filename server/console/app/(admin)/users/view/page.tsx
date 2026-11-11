@@ -5,8 +5,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 
 import { useAdmin } from "@/components/shell";
-import { Alert, Badge, Button, Card, Empty, Field, PageTitle, Select, Spinner, Toggle } from "@/components/ui";
-import { api, errorText, fmtDate, timeAgo, type Plan, type Session, type User } from "@/lib/api";
+import { Alert, Badge, Button, Card, Empty, Field, Icon, PageTitle, Select, Spinner, Toggle } from "@/components/ui";
+import { PlanModal, ResetPasswordModal } from "@/components/user-modals";
+import { api, errorText, fmtDate, planExpired, timeAgo, type Plan, type Session, type User } from "@/lib/api";
 
 type Detail = {
   user: User;
@@ -24,6 +25,7 @@ function UserView() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [msg, setMsg] = useState<{ tone: "red" | "green"; text: string } | null>(null);
   const [busy, setBusy] = useState("");
+  const [modal, setModal] = useState<"password" | "plan" | null>(null);
 
   const load = useCallback(() => {
     api<Detail>(`/users/${id}`).then(setD).catch((e) => setMsg({ tone: "red", text: errorText(e) }));
@@ -52,6 +54,12 @@ function UserView() {
   if (!d) return msg ? <Alert>{msg.text}</Alert> : <Spinner />;
   const u = d.user;
   const self = u.id === me.id;
+  const plan = plans.find((p) => p.id === u.plan_id);
+  const done = (text: string) => {
+    setModal(null);
+    setMsg({ tone: "green", text });
+    load();
+  };
 
   return (
     <>
@@ -78,14 +86,22 @@ function UserView() {
         <div className="space-y-4 lg:col-span-2">
           <Card title="Tài khoản">
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Gói dịch vụ" hint="Nâng cấp / hạ cấp có hiệu lực ngay.">
-                <Select value={u.plan_id} disabled={busy !== ""} onChange={(e) => patch({ plan_id: e.target.value }, "Đã đổi gói.")}>
-                  {plans.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} {p.max_devices ? `(${p.max_devices} thiết bị)` : "(không giới hạn)"}
-                    </option>
-                  ))}
-                </Select>
+              <Field
+                label="Gói dịch vụ"
+                hint={
+                  u.plan_expires_at
+                    ? planExpired(u)
+                      ? `Đã hết hạn ${fmtDate(u.plan_expires_at, false)}, đang dùng gói mặc định.`
+                      : `Hết hạn ${fmtDate(u.plan_expires_at, false)}.`
+                    : "Không thời hạn."
+                }
+              >
+                <div className="flex items-center gap-2">
+                  <Badge tone={planExpired(u) ? "red" : u.plan_id === "free" ? "neutral" : "green"}>{plan?.name ?? u.plan_id}</Badge>
+                  <Button variant="ghost" className="px-3 py-1.5 text-xs" onClick={() => setModal("plan")}>
+                    <Icon name="plan" className="size-4" /> Đổi gói / thời hạn
+                  </Button>
+                </div>
               </Field>
               <Field label="Vai trò">
                 <Select
@@ -162,6 +178,9 @@ function UserView() {
                 </li>
               ))}
             </ul>
+            <Button variant="ghost" className="mt-4 w-full" onClick={() => setModal("password")}>
+              <Icon name="key" className="size-4" /> Đặt lại mật khẩu
+            </Button>
           </Card>
           <Card title="Vault (E2EE)">
             {d.vault.exists ? (
@@ -191,6 +210,8 @@ function UserView() {
           )}
         </div>
       </div>
+      {modal === "password" && <ResetPasswordModal user={u} onClose={() => setModal(null)} onDone={done} />}
+      {modal === "plan" && <PlanModal user={u} plans={plans} onClose={() => setModal(null)} onDone={done} />}
     </>
   );
 }

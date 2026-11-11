@@ -78,8 +78,15 @@ func (s *Server) h(fn handler) http.HandlerFunc {
 
 func (s *Server) clientIP(r *http.Request) string {
 	if s.cfg.TrustProxy {
+		// Cloudflare (incl. Tunnel) sets CF-Connecting-IP itself. Otherwise the
+		// proxy appends the peer it saw to X-Forwarded-For, so the last entry is
+		// the trustworthy one; earlier entries come from the client.
+		if cf := strings.TrimSpace(r.Header.Get("CF-Connecting-IP")); cf != "" {
+			return cf
+		}
 		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-			return strings.TrimSpace(strings.Split(xff, ",")[0])
+			parts := strings.Split(xff, ",")
+			return strings.TrimSpace(parts[len(parts)-1])
 		}
 		if xr := r.Header.Get("X-Real-IP"); xr != "" {
 			return xr

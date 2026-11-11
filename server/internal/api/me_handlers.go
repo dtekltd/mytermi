@@ -18,6 +18,16 @@ type planInfo struct {
 	Name        string `json:"name"`
 	MaxDevices  int    `json:"max_devices"`
 	SyncEnabled bool   `json:"sync_enabled"`
+	// ExpiresAt is when this plan ends (then the default plan applies); null = no end.
+	ExpiresAt *time.Time `json:"expires_at"`
+}
+
+// planExpiry is the end date to show for the effective plan.
+func planExpiry(u *db.User, effective *db.Plan) *time.Time {
+	if effective.ID == u.PlanID && !u.PlanExpired(time.Now()) {
+		return u.PlanExpiresAt
+	}
+	return nil
 }
 
 type meResponse struct {
@@ -34,7 +44,7 @@ type meResponse struct {
 }
 
 func (s *Server) meOf(ctx context.Context, u *db.User) (*meResponse, error) {
-	plan, err := s.db.PlanByID(ctx, u.PlanID)
+	plan, err := s.db.EffectivePlan(ctx, u)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +63,7 @@ func (s *Server) meOf(ctx context.Context, u *db.User) (*meResponse, error) {
 	return &meResponse{
 		ID: u.ID, Email: u.Email, EmailVerified: u.EmailVerified, Name: u.Name, Role: u.Role,
 		HasPassword: u.HasPassword(), Providers: providers, HasVault: verr == nil, CreatedAt: u.CreatedAt,
-		Plan: planInfo{ID: plan.ID, Name: plan.Name, MaxDevices: plan.MaxDevices, SyncEnabled: plan.SyncEnabled},
+		Plan: planInfo{ID: plan.ID, Name: plan.Name, MaxDevices: plan.MaxDevices, SyncEnabled: plan.SyncEnabled, ExpiresAt: planExpiry(u, plan)},
 	}, nil
 }
 
@@ -188,7 +198,7 @@ var (
 )
 
 func (s *Server) requireSync(ctx context.Context, u *db.User) error {
-	plan, err := s.db.PlanByID(ctx, u.PlanID)
+	plan, err := s.db.EffectivePlan(ctx, u)
 	if err != nil {
 		return err
 	}

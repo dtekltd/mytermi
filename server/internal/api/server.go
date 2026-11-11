@@ -183,6 +183,7 @@ func (s *Server) Routes() http.Handler {
 	mux.HandleFunc("PATCH "+a+"/users/{id}", s.admin(s.handlePatchUser))
 	mux.HandleFunc("DELETE "+a+"/users/{id}", s.admin(s.handleDeleteUser))
 	mux.HandleFunc("POST "+a+"/users/{id}/revoke-sessions", s.admin(s.handleRevokeUserSessions))
+	mux.HandleFunc("POST "+a+"/users/{id}/password", s.admin(s.handleAdminSetPassword))
 	mux.HandleFunc("GET "+a+"/plans", s.admin(s.handleListPlans))
 	mux.HandleFunc("PUT "+a+"/plans/{id}", s.admin(s.handlePutPlan))
 	mux.HandleFunc("DELETE "+a+"/plans/{id}", s.admin(s.handleDeletePlan))

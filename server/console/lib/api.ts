@@ -54,6 +54,7 @@ export type User = {
   name: string;
   role: "user" | "admin";
   plan_id: string;
+  plan_expires_at: string | null;
   disabled: boolean;
   created_at: string;
   last_seen_at: string | null;
@@ -120,6 +121,11 @@ export function fmtDate(s: string | null | undefined, withTime = true): string {
   return withTime
     ? d.toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })
     : d.toLocaleDateString("vi-VN");
+}
+
+/** Plan end date has passed (the default plan applies). */
+export function planExpired(u: Pick<User, "plan_expires_at">): boolean {
+  return !!u.plan_expires_at && new Date(u.plan_expires_at).getTime() <= Date.now();
 }
 
 export function timeAgo(s: string | null | undefined): string {

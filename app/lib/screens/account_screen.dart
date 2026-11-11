@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/account_service.dart';
 import '../services/api_client.dart';
 import '../services/app_services.dart';
 import '../services/sync_service.dart';
@@ -78,7 +79,7 @@ class AccountScreen extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(color: c.greenBg, borderRadius: BorderRadius.circular(8)),
-                              child: Text('Gói ${a.planName}', style: TextStyle(color: c.green, fontSize: 12.5)),
+                              child: Text(planLabel(a), style: TextStyle(color: c.green, fontSize: 12.5)),
                             ),
                           ],
                         ),
@@ -362,4 +363,11 @@ class _SessionsScreenState extends State<SessionsScreen> {
     if (d.inDays < 1) return '${d.inHours} giờ trước';
     return '${d.inDays} ngày trước';
   }
+}
+
+/// "Gói Pro" or "Gói Pro · đến 26/12/2026".
+String planLabel(Account a) {
+  final e = a.planExpiresAt;
+  if (e == null) return 'Gói ${a.planName}';
+  return 'Gói ${a.planName} · đến ${e.day.toString().padLeft(2, '0')}/${e.month.toString().padLeft(2, '0')}/${e.year}';
 }
