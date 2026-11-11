@@ -1,16 +1,18 @@
 @echo off
 rem Run / build MyTermi on Windows.
 rem
-rem   run [dev|prod|build] [android|ios] [extra flutter args...]
+rem   run [dev|prod|build] [android|windows] [extra flutter args...]
 rem
 rem   dev    debug build with hot reload            (default)
-rem   prod   release build, run on a device
-rem   build  release APK
+rem   prod   release build, run on a device / this PC
+rem   build  release package: android -> APK, windows -> zip
 rem
-rem Default platform on Windows: android (iOS needs macOS).
+rem Default platform: android (iOS needs macOS).
+rem Windows needs Visual Studio 2022 with "Desktop development with C++".
 rem Examples:
 rem   run
-rem   run prod
+rem   run windows
+rem   run build windows
 rem   run build android --split-per-abi
 rem   run dev android -d emulator-5554
 setlocal EnableDelayedExpansion
@@ -27,6 +29,7 @@ if /i "%~1"=="prod"    (set "MODE=prod"    & shift & goto parse)
 if /i "%~1"=="build"   (set "MODE=build"   & shift & goto parse)
 if /i "%~1"=="android" (set "PLATFORM=android" & shift & goto parse)
 if /i "%~1"=="ios"     (set "PLATFORM=ios" & shift & goto parse)
+if /i "%~1"=="windows" (set "PLATFORM=windows" & shift & goto parse)
 if /i "%~1"=="help"    goto usage
 if /i "%~1"=="-h"      goto usage
 if /i "%~1"=="--help"  goto usage
@@ -90,6 +93,17 @@ set "DEFINES=--dart-define=APP_ENV=%ENV%"
 if defined MYTERMI_API_URL set "DEFINES=%DEFINES% --dart-define=API_URL=%MYTERMI_API_URL%"
 if defined GOOGLE_SERVER_CLIENT_ID set "DEFINES=%DEFINES% --dart-define=GOOGLE_SERVER_CLIENT_ID=%GOOGLE_SERVER_CLIENT_ID%"
 
+if /i "%MODE%"=="build" if /i "%PLATFORM%"=="windows" (
+  echo ^> flutter build windows --release %DEFINES%%EXTRA%
+  call flutter build windows --release %DEFINES%%EXTRA%
+  if errorlevel 1 exit /b 1
+  powershell -NoProfile -Command "Compress-Archive -Force -Path build\windows\x64\runner\Release\* -DestinationPath build\windows\MyTermi-windows-x64.zip"
+  if errorlevel 1 exit /b 1
+  echo OK App: build\windows\x64\runner\Release\mytermi.exe
+  echo OK Zip: build\windows\MyTermi-windows-x64.zip  ^(giai nen roi chay mytermi.exe^)
+  exit /b 0
+)
+
 if /i "%MODE%"=="build" (
   echo ^> flutter build apk --release %DEFINES%%EXTRA%
   call flutter build apk --release %DEFINES%%EXTRA%
@@ -101,6 +115,10 @@ if /i "%MODE%"=="build" (
 rem --- pick an Android device unless -d was given ---
 set "HASDEV="
 echo.%EXTRA% | findstr /r /c:" -d " /c:"--device-id" >nul && set "HASDEV=1"
+if /i "%PLATFORM%"=="windows" if not defined HASDEV (
+  set "HASDEV=1"
+  set "EXTRA= -d windows%EXTRA%"
+)
 if not defined HASDEV (
   set "DEVID="
   for /f "usebackq tokens=*" %%I in (`powershell -NoProfile -Command "$d = flutter devices --machine 2>$null | Out-String | ConvertFrom-Json | Where-Object { $_.targetPlatform -like 'android*' } | Sort-Object emulator; if ($d) { @($d)[0].id }"`) do set "DEVID=%%I"

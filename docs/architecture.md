@@ -1,7 +1,7 @@
 # Architecture
 
 ```
-┌──────────────── iPhone / Android ────────────────┐        ┌──────────── mytermi (one Go binary) ────────────┐
+┌──────────── iPhone / Android / Windows ──────────┐        ┌──────────── mytermi (one Go binary) ────────────┐
 │ Flutter app                                       │        │                                                  │
 │  HostStore / CommandStore  ← local source of truth│        │  /api/v1/*      JSON API (app + console)         │
 │  SessionManager → SSH (dartssh2) ─────────────────┼──SSH──▶│  /console/*     admin console (Next.js export,   │──▶ your servers

@@ -22,6 +22,8 @@ import 'package:mytermi/screens/terminal_screen.dart';
 import 'package:mytermi/services/app_services.dart';
 import 'package:mytermi/services/session_manager.dart';
 import 'package:mytermi/theme.dart';
+import 'package:mytermi/util/platform.dart';
+import 'package:mytermi/widgets/extra_keys.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> _font(String family, List<String> paths) async {
@@ -42,6 +44,8 @@ void main() {
     await _font('Roboto', ['$sdk/Roboto-Regular.ttf', '$sdk/Roboto-Medium.ttf', '$sdk/Roboto-Bold.ttf']);
     await _font('MaterialIcons', ['$sdk/MaterialIcons-Regular.otf']);
     await _font(monoFont, ['assets/fonts/JetBrainsMono-Regular.ttf', 'assets/fonts/JetBrainsMono-Bold.ttf']);
+    debugIsDesktop = false;
+    addTearDown(() => debugIsDesktop = null);
     SharedPreferences.setMockInitialValues({});
     FlutterSecureStorage.setMockInitialValues({});
     app = await AppServices.load(startSync: false);
@@ -159,6 +163,26 @@ void main() {
       await expectLater(find.byType(MaterialApp), matchesGoldenFile('shots/${mode}_3_arrow_pad.png'));
       await g.up();
       await t.pump();
+      app.sessions.close(s);
+      await t.pump();
+    });
+
+    testWidgets('desktop terminal $mode', skip: !_enabled, (t) async {
+      debugIsDesktop = true;
+      t.view.physicalSize = const Size(1100, 700);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
+      final s = fakeSession();
+      await t.pumpWidget(MaterialApp(
+        theme: buildTheme(pal),
+        debugShowCheckedModeBanner: false,
+        home: TerminalScreen(manager: app.sessions, hosts: app.hosts, commands: app.commands),
+      ));
+      await t.pump();
+      s.terminal.write('\x1b[33mubuntu\x1b[0m in \x1b[1;32mdev1\x1b[0m in \x1b[1;36m~\x1b[0m\r\n\x1b[32m❯\x1b[0m ');
+      await t.pump();
+      expect(find.byType(ExtraKeys), findsNothing);
+      await expectLater(find.byType(MaterialApp), matchesGoldenFile('shots/${mode}_15_desktop_terminal.png'));
       app.sessions.close(s);
       await t.pump();
     });

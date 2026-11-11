@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:xterm/xterm.dart';
@@ -8,6 +9,7 @@ import '../services/host_store.dart';
 import '../services/session_manager.dart';
 import '../services/settings_store.dart';
 import '../theme.dart';
+import '../util/platform.dart';
 import '../widgets/common.dart';
 import '../widgets/extra_keys.dart';
 import '../widgets/suggestion_bar.dart';
@@ -136,6 +138,39 @@ class _TerminalScreenState extends State<TerminalScreen> {
   }
 
   // ------------------------------------------------------------- actions
+
+  /// Copy/paste keys. xterm's defaults on Windows/Linux/Android take Ctrl+V and
+  /// Ctrl+A, which shells need (literal-next, start of line), so use the
+  /// terminal-style Ctrl+Shift+C / Ctrl+Shift+V instead. Apple keeps ⌘C / ⌘V.
+  static final Map<ShortcutActivator, Intent>? _shortcuts =
+      defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS
+          ? null
+          : {
+              const SingleActivator(LogicalKeyboardKey.keyC, control: true, shift: true): CopySelectionTextIntent.copy,
+              const SingleActivator(LogicalKeyboardKey.keyV, control: true, shift: true):
+                  const PasteTextIntent(SelectionChangedCause.keyboard),
+              const SingleActivator(LogicalKeyboardKey.insert, shift: true):
+                  const PasteTextIntent(SelectionChangedCause.keyboard),
+            };
+
+  /// Ctrl (⌘ on macOS) with = / - / 0 zooms the terminal font.
+  KeyEventResult _onKeyEvent(FocusNode _, KeyEvent e) {
+    if (e is KeyUpEvent) return KeyEventResult.ignored;
+    final kb = HardwareKeyboard.instance;
+    final mod = defaultTargetPlatform == TargetPlatform.macOS ? kb.isMetaPressed : kb.isControlPressed;
+    if (!mod || kb.isAltPressed) return KeyEventResult.ignored;
+    final k = e.logicalKey;
+    if (k == LogicalKeyboardKey.equal || k == LogicalKeyboardKey.numpadAdd) {
+      _settings.fontSize = _settings.fontSize + 1;
+    } else if (k == LogicalKeyboardKey.minus || k == LogicalKeyboardKey.numpadSubtract) {
+      _settings.fontSize = _settings.fontSize - 1;
+    } else if (k == LogicalKeyboardKey.digit0 || k == LogicalKeyboardKey.numpad0) {
+      _settings.fontSize = 14;
+    } else {
+      return KeyEventResult.ignored;
+    }
+    return KeyEventResult.handled;
+  }
 
   Future<void> _paste(SshSession s) async {
     final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
@@ -457,6 +492,25 @@ class _TerminalScreenState extends State<TerminalScreen> {
 
     final termTheme = _terminalTheme(context);
     final darkTerm = termTheme.background.computeLuminance() < 0.5;
+    final view = TerminalView(
+      s.terminal,
+      key: viewKey,
+      controller: s.controller,
+      scrollController: scroll,
+      focusNode: _focusNode,
+      autofocus: true,
+      backgroundOpacity: 1,
+      theme: termTheme,
+      textStyle: TerminalStyle(fontFamily: monoFont, fontSize: _settings.fontSize),
+      cursorType: _settings.cursorType,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      keyboardAppearance: Brightness.dark,
+      deleteDetection: true,
+      shortcuts: _shortcuts,
+      onKeyEvent: _onKeyEvent,
+      // Right click: copy the selection, or paste when nothing is selected.
+      onSecondaryTapDown: isDesktop ? (_, _) => s.controller.selection != null ? _copy(s) : _paste(s) : null,
+    );
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: darkTerm ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
@@ -470,39 +524,26 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 listenable: s,
                 builder: (context, _) => Stack(fit: StackFit.expand, children: [
                   Positioned.fill(
-                    child: TerminalGestures(
-                      onTap: () {
-                        s.controller.clearSelection();
-                        viewKey.currentState?.requestKeyboard();
-                      },
-                      onDoubleTap: () {
-                        if (_settings.doubleTapTab) s.key(TerminalKey.tab);
-                      },
-                      step: _settings.swipe.step,
-                      onArrow: (d) => _onArrow(s, d),
-                      onSelectStart: (p) => viewKey.currentState?.renderTerminal.selectWord(p),
-                      onSelectUpdate: (a, b) => viewKey.currentState?.renderTerminal.selectWord(a, b),
-                      onScroll: (dy) => _onScroll(s, dy),
-                      onPinchStart: () => _pinchBaseFont = _settings.fontSize,
-                      onPinch: (scale) => _settings.fontSize = _pinchBaseFont * scale,
-                      child: IgnorePointer(
-                        child: TerminalView(
-                          s.terminal,
-                          key: viewKey,
-                          controller: s.controller,
-                          scrollController: scroll,
-                          focusNode: _focusNode,
-                          autofocus: true,
-                          backgroundOpacity: 1,
-                          theme: termTheme,
-                          textStyle: TerminalStyle(fontFamily: monoFont, fontSize: _settings.fontSize),
-                          cursorType: _settings.cursorType,
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                          keyboardAppearance: Brightness.dark,
-                          deleteDetection: true,
-                        ),
-                      ),
-                    ),
+                    child: isDesktop
+                        // Mouse: native click-drag selection and wheel scrolling.
+                        ? view
+                        : TerminalGestures(
+                            onTap: () {
+                              s.controller.clearSelection();
+                              viewKey.currentState?.requestKeyboard();
+                            },
+                            onDoubleTap: () {
+                              if (_settings.doubleTapTab) s.key(TerminalKey.tab);
+                            },
+                            step: _settings.swipe.step,
+                            onArrow: (d) => _onArrow(s, d),
+                            onSelectStart: (p) => viewKey.currentState?.renderTerminal.selectWord(p),
+                            onSelectUpdate: (a, b) => viewKey.currentState?.renderTerminal.selectWord(a, b),
+                            onScroll: (dy) => _onScroll(s, dy),
+                            onPinchStart: () => _pinchBaseFont = _settings.fontSize,
+                            onPinch: (scale) => _settings.fontSize = _pinchBaseFont * scale,
+                            child: IgnorePointer(child: view),
+                          ),
                   ),
                   _SelectionToolbar(session: s, onCopy: () => _copy(s)),
                   if (s.status == SessionStatus.disconnected)
@@ -542,11 +583,12 @@ class _TerminalScreenState extends State<TerminalScreen> {
                   onPaste: () => _paste(s),
                 ),
               ),
-              ExtraKeys(
-                session: s,
-                keyboardVisible: keyboardVisible,
-                onToggleKeyboard: () => _toggleKeyboard(keyboardVisible),
-              ),
+              if (!isDesktop)
+                ExtraKeys(
+                  session: s,
+                  keyboardVisible: keyboardVisible,
+                  onToggleKeyboard: () => _toggleKeyboard(keyboardVisible),
+                ),
             ]),
           ),
         ]),

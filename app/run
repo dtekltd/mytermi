@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # Run / build MyTermi.
 #
-#   ./run [dev|prod|build] [ios|android] [extra flutter args...]
+#   ./run [dev|prod|build] [ios|android|windows] [extra flutter args...]
 #
 #   dev    debug build with hot reload            (default)
 #   prod   release build, run on a device
-#   build  release package: android -> APK, ios -> IPA
+#   build  release package: android -> APK, ios -> IPA, windows -> zip
 #
 # Platform defaults: macOS -> ios, Linux/Windows -> android.
 # Examples:
@@ -25,7 +25,7 @@ case "$(uname -s)" in Darwin) platform=ios ;; *) platform=android ;; esac
 while [[ $# -gt 0 ]]; do
   case "$1" in
     dev|prod|build) mode=$1 ;;
-    ios|android)    platform=$1 ;;
+    ios|android|windows) platform=$1 ;;
     -h|--help|help) usage ;;
     *) break ;;   # rest goes to flutter
   esac
@@ -61,6 +61,12 @@ if [[ -z "${ANDROID_HOME:-}" && -d "$HOME/sdk/android" ]]; then export ANDROID_H
 if [[ $platform == ios && "$(uname -s)" != Darwin ]]; then
   echo "✗ iOS chỉ chạy/build được trên macOS (cần Xcode)." >&2; exit 1
 fi
+if [[ $platform == windows ]]; then
+  case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*) ;;
+    *) echo "✗ Bản Windows chỉ chạy/build được trên Windows (dùng run.cmd, cần Visual Studio C++)." >&2; exit 1 ;;
+  esac
+fi
 
 defines=(--dart-define=APP_ENV="$([[ $mode == dev ]] && echo dev || echo prod)")
 # Optional: sync server and Google Sign-In client IDs (see docs/apple-review.md).
@@ -70,7 +76,13 @@ defines=(--dart-define=APP_ENV="$([[ $mode == dev ]] && echo dev || echo prod)")
 
 # --- build --------------------------------------------------------------------
 if [[ $mode == build ]]; then
-  if [[ $platform == android ]]; then
+  if [[ $platform == windows ]]; then
+    set -x; flutter build windows --release "${defines[@]}" "${extra[@]}"; { set +x; } 2>/dev/null
+    rel=build/windows/x64/runner/Release
+    powershell -NoProfile -Command "Compress-Archive -Force -Path $rel/* -DestinationPath build/windows/MyTermi-windows-x64.zip"
+    echo "✓ App: $rel/mytermi.exe"
+    echo "✓ Zip: build/windows/MyTermi-windows-x64.zip (giải nén rồi chạy mytermi.exe)"
+  elif [[ $platform == android ]]; then
     set -x; flutter build apk --release "${defines[@]}" "${extra[@]}"; { set +x; } 2>/dev/null
     echo "✓ APK: build/app/outputs/flutter-apk/"
   else
@@ -100,6 +112,11 @@ list_devices() {
 }
 
 has_real() { awk -F'\t' '$2=="real"' <<<"$1" | grep -q .; }
+
+if [[ $platform == windows ]] && ! $has_device_arg; then
+  extra=(-d windows "${extra[@]}")
+  has_device_arg=true
+fi
 
 if ! $has_device_arg; then
   devices=$(list_devices)

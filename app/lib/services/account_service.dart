@@ -117,7 +117,14 @@ class AccountService extends ChangeNotifier implements TokenStore {
 
   Map<String, String> get _device => {
     'id': deviceId,
-    'name': Platform.isIOS ? 'iPhone / iPad' : (Platform.isAndroid ? 'Android' : Platform.operatingSystem),
+    'name': switch (Platform.operatingSystem) {
+      'ios' => 'iPhone / iPad',
+      'android' => 'Android',
+      'windows' => 'Windows',
+      'macos' => 'Mac',
+      'linux' => 'Linux',
+      final os => os,
+    },
     'platform': Platform.operatingSystem,
   };
 

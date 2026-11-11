@@ -147,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final c = context.colors;
     final cfg = _config;
     final showApple = (Platform.isIOS || Platform.isMacOS) && (cfg?.apple ?? false);
-    final showGoogle = (cfg?.google ?? false) && (Platform.isAndroid || googleIosClientId.isNotEmpty);
+    final showGoogle = (cfg?.google ?? false) && (Platform.isAndroid || (Platform.isIOS && googleIosClientId.isNotEmpty));
     return Scaffold(
       appBar: AppBar(title: const Text('Tài khoản')),
       body: ListView(
