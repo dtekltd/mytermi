@@ -38,7 +38,7 @@ class SuggestionBar extends StatelessWidget {
               ? Padding(
                   padding: const EdgeInsets.only(left: 14),
                   child: Text(
-                    'Gõ lệnh để xem gợi ý…',
+                    'Gõ lệnh trong terminal để xem gợi ý…',
                     style: TextStyle(color: c.textDim, fontSize: 16),
                   ),
                 )

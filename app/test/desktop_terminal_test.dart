@@ -55,6 +55,29 @@ void main() {
     await close(t, s);
   });
 
+  testWidgets('desktop: typed text reaches the shell without clicking the terminal first', (t) async {
+    debugIsDesktop = true;
+    final s = await open(t);
+    final out = <String>[];
+    s.terminal.onOutput = out.add;
+    await t.pump();
+    // Autofocus alone doesn't open xterm's text-input connection.
+    expect(t.testTextInput.hasAnyClients, isTrue);
+    t.testTextInput.enterText('  ls'); // xterm keeps two spaces for delete detection
+    await t.pump();
+    expect(out.join(), 'ls');
+
+    // Focus coming back after a dialog (password, host key) reopens it too.
+    final dialog = showDialog<void>(context: t.element(find.byType(TerminalScreen)), builder: (_) => const AlertDialog());
+    await t.pumpAndSettle();
+    expect(t.testTextInput.hasAnyClients, isFalse);
+    Navigator.of(t.element(find.byType(AlertDialog))).pop();
+    await dialog;
+    await t.pumpAndSettle();
+    expect(t.testTextInput.hasAnyClients, isTrue);
+    await close(t, s);
+  });
+
   testWidgets('Ctrl+= / Ctrl+- / Ctrl+0 zoom the terminal font', (t) async {
     debugIsDesktop = true;
     final s = await open(t);

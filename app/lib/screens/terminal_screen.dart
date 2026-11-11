@@ -45,6 +45,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
     super.initState();
     _m.addListener(_onManagerChanged);
     _settings.addListener(_onSettingsChanged);
+    _focusNode.addListener(_onFocusChanged);
   }
 
   @override
@@ -100,6 +101,17 @@ class _TerminalScreenState extends State<TerminalScreen> {
   }
 
   TerminalViewState? get _view => _viewKeys[_m.active?.id]?.currentState;
+
+  /// Desktop: xterm only opens its text-input connection (needed for typed
+  /// characters; arrows/backspace come as key events) when focus arrives with a
+  /// keyboard token, i.e. a tap. Autofocus and focus returning after a dialog
+  /// don't carry one, so open it whenever the terminal gains focus.
+  void _onFocusChanged() {
+    if (!isDesktop || !_focusNode.hasFocus) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _focusNode.hasFocus) _view?.requestKeyboard();
+    });
+  }
 
   // ------------------------------------------------------------ gestures
 
