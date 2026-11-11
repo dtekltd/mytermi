@@ -277,7 +277,7 @@ class _TextInputDialogState extends State<_TextInputDialog> {
           onSubmitted: (v) => Navigator.pop(context, v),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Huỷ')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           FilledButton(onPressed: () => Navigator.pop(context, _ctl.text), child: Text(widget.confirmText)),
         ],
       );

@@ -4,7 +4,13 @@ import 'package:xterm/xterm.dart';
 /// whether a submitted line was echoed by the shell (i.e. it was a real
 /// command, not text typed at a hidden password prompt).
 
-final _secretPrompt = RegExp(r'password|passphrase|passcode|pin:|mật khẩu', caseSensitive: false);
+// The last alternative matches localized sudo/passwd prompts on servers set to a
+// Vietnamese locale, written as escapes so the source stays ASCII.
+final _secretPrompt = RegExp(
+  'password|passphrase|passcode|pin:|m\u1EADt kh\u1EA9u',
+  caseSensitive: false,
+  unicode: true,
+);
 
 /// First/last buffer rows of the soft-wrapped line containing row [y].
 (int, int) wrappedGroup(Terminal t, int y) {

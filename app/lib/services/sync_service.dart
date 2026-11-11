@@ -403,7 +403,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
       }
       _error = e.friendly;
     } catch (e) {
-      _error = 'Lỗi đồng bộ: $e';
+      _error = 'Sync error: $e';
     } finally {
       _syncing = false;
       notifyListeners();
@@ -494,7 +494,7 @@ class SyncService extends ChangeNotifier with WidgetsBindingObserver {
     try {
       p = await VaultCrypto.decryptItem(_vk!, type, id, base64.decode(it['data'] as String));
     } on VaultDecryptException {
-      _error = 'Một mục đồng bộ không giải mã được và đã bị bỏ qua.';
+      _error = 'A synced item couldn\'t be decrypted and was skipped.';
       return;
     }
     final _Local applied;

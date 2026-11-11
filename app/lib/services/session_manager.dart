@@ -92,7 +92,7 @@ class SshSession extends ChangeNotifier {
     try {
       shell.write(Uint8List.fromList(utf8.encode(out)));
     } catch (_) {
-      _shellEnded(shell, 'Mất kết nối.'); // channel closed under us
+      _shellEnded(shell, 'Connection lost.'); // channel closed under us
       return;
     }
     refreshSuggestions();
@@ -106,7 +106,7 @@ class SshSession extends ChangeNotifier {
     try {
       shell.resizeTerminal(w, h, pw, ph);
     } catch (_) {
-      scheduleMicrotask(() => _shellEnded(shell, 'Mất kết nối.'));
+      scheduleMicrotask(() => _shellEnded(shell, 'Connection lost.'));
     }
   }
 
@@ -164,7 +164,7 @@ class SshSession extends ChangeNotifier {
 
   Future<int> importHistory() async {
     final client = _client;
-    if (client == null) throw 'Chưa kết nối';
+    if (client == null) throw 'Not connected';
     final out = await client.run(
       r'cat ~/.bash_history ~/.zsh_history ~/.local/share/fish/fish_history 2>/dev/null',
       stderr: false,
@@ -200,14 +200,14 @@ class SshSession extends ChangeNotifier {
         password = (secrets.password?.isNotEmpty ?? false) ? secrets.password : _sessionPassword;
         password ??= await onPassword?.call();
         if (password == null) {
-          _write('\x1b[33mĐã huỷ.\x1b[0m\r\n');
+          _write('\x1b[33mCancelled.\x1b[0m\r\n');
           _setStatus(SessionStatus.disconnected);
           return;
         }
       } else {
         final key = hosts.keyById(host.keyId);
         final ks = key == null ? null : await hosts.keySecrets(key.id);
-        if (ks == null) throw 'Host chưa chọn private key (hoặc key đã bị xoá). Sửa host để chọn key.';
+        if (ks == null) throw 'No private key selected for this host (or the key was deleted). Edit the host to choose a key.';
         identities = SSHKeyPair.fromPem(ks.pem, ks.passphrase);
       }
 
@@ -241,27 +241,27 @@ class SshSession extends ChangeNotifier {
         stream.cast<List<int>>().transform(const Utf8Decoder(allowMalformed: true)).listen(terminal.write);
       }
       shell.done.whenComplete(() {
-        if (gen == _gen) _shellEnded(shell, 'Phiên đã kết thúc.');
+        if (gen == _gen) _shellEnded(shell, 'Session ended.');
       });
       client.done.catchError((_) {}).whenComplete(() {
-        if (gen == _gen) _shellEnded(shell, 'Mất kết nối.');
+        if (gen == _gen) _shellEnded(shell, 'Connection lost.');
       });
 
       tracker.reset();
       _setStatus(SessionStatus.connected);
     } on SSHAuthFailError {
       _sessionPassword = null;
-      _fail('Xác thực thất bại: sai username, password hoặc key.');
+      _fail('Authentication failed: wrong username, password or key.');
     } on SSHAuthAbortError {
-      _fail('Kết nối bị đóng trong lúc xác thực.');
+      _fail('Connection closed during authentication.');
     } on SSHHostkeyError {
-      _fail('Đã từ chối host key của server.');
+      _fail('Server host key rejected.');
     } on SocketException catch (e) {
-      _fail('Không kết nối được: ${e.message}');
+      _fail('Could not connect: ${e.message}');
     } on TimeoutException {
-      _fail('Hết thời gian chờ kết nối.');
+      _fail('Connection timed out.');
     } catch (e) {
-      _fail('Lỗi: $e');
+      _fail('Error: $e');
     }
   }
 
@@ -290,7 +290,7 @@ class SshSession extends ChangeNotifier {
   void disconnect() {
     _gen++;
     _close();
-    _onDisconnected('Đã ngắt kết nối.');
+    _onDisconnected('Disconnected.');
   }
 
   void _close() {

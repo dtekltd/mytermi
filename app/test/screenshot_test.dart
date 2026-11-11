@@ -113,7 +113,7 @@ void main() {
       }
 
       await shot(LoginScreen(app: app, config: const ServerConfig(apple: true)), '9_login');
-      await shot(OtpScreen(app: app, email: 'tuan@example.com'), '10_otp');
+      await shot(OtpScreen(app: app, email: 'alex@example.com'), '10_otp');
       await shot(VaultSetupScreen(app: app), '12_vault_setup');
       await shot(const RecoveryKeyScreen(recoveryKey: '7Q2M-K9XD-4FTA-ZC81-WE3N-PV6H-R0BJ-5YMS'), '13_recovery');
       await shot(VaultUnlockScreen(app: app), '14_vault_unlock');
@@ -121,7 +121,7 @@ void main() {
       // Signed-in account page with sync running.
       SharedPreferences.setMockInitialValues({
         'acct_me': jsonEncode({
-          'id': 'u1', 'email': 'tuan@example.com', 'name': 'Tuấn', 'has_password': true, 'providers': ['apple'],
+          'id': 'u1', 'email': 'alex@example.com', 'name': 'Alex', 'has_password': true, 'providers': ['apple'],
           'plan': {'id': 'free', 'name': 'Free', 'max_devices': 2, 'sync_enabled': true}, 'has_vault': true,
         }),
       });

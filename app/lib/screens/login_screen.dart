@@ -13,7 +13,7 @@ import '../theme.dart';
 import '../widgets/common.dart';
 import 'account_screen.dart';
 
-String _friendly(Object e) => e is ApiException ? e.friendly : 'Có lỗi xảy ra: $e';
+String _friendly(Object e) => e is ApiException ? e.friendly : 'Something went wrong: $e';
 
 /// After any successful sign-in: optional password step, then the account page.
 Future<void> _afterSignIn(BuildContext context, AppServices app, SignInResult r, {bool forgot = false}) async {
@@ -69,7 +69,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _loadConfig() async {
     setState(() => _configError = null);
     if (_acct.serverUrl.isEmpty) {
-      setState(() => _configError = 'Chưa đặt địa chỉ máy chủ đồng bộ.');
+      setState(() => _configError = 'No sync server URL is set.');
       return;
     }
     try {
@@ -97,7 +97,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _validEmail() {
     final ok = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(_email.text.trim());
-    if (!ok) setState(() => _error = 'Nhập email hợp lệ.');
+    if (!ok) setState(() => _error = 'Enter a valid email.');
     return ok;
   }
 
@@ -131,8 +131,8 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _editServer() async {
     final url = await showTextInputDialog(
       context,
-      title: 'Máy chủ đồng bộ',
-      confirmText: 'Lưu',
+      title: 'Sync server',
+      confirmText: 'Save',
       initialText: _acct.serverUrl,
       hintText: 'https://sync.example.com',
     );
@@ -149,21 +149,21 @@ class _LoginScreenState extends State<LoginScreen> {
     final showApple = (Platform.isIOS || Platform.isMacOS) && (cfg?.apple ?? false);
     final showGoogle = (cfg?.google ?? false) && (Platform.isAndroid || (Platform.isIOS && googleIosClientId.isNotEmpty));
     return Scaffold(
-      appBar: AppBar(title: const Text('Tài khoản')),
+      appBar: AppBar(title: const Text('Account')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
           Icon(Icons.cloud_sync_rounded, size: 56, color: c.green),
           const SizedBox(height: 12),
           const Text(
-            'Đăng nhập hoặc đăng ký',
+            'Sign in or create an account',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           Text(
-            'Đồng bộ host, private key và snippet giữa các thiết bị. Dữ liệu được mã hoá đầu-cuối: '
-            'máy chủ không thể đọc được.',
+            'Sync hosts, private keys and snippets across devices. Your data is end-to-end encrypted: '
+            'the server can\'t read it.',
             textAlign: TextAlign.center,
             style: TextStyle(color: c.textDim, height: 1.4),
           ),
@@ -171,15 +171,15 @@ class _LoginScreenState extends State<LoginScreen> {
           if (_configError != null)
             _Banner(
               text: _configError!,
-              action: TextButton(onPressed: _loadConfig, child: const Text('Thử lại')),
+              action: TextButton(onPressed: _loadConfig, child: const Text('Retry')),
             ),
           if (cfg != null && !cfg.signupEnabled)
-            const _Banner(text: 'Máy chủ đang tạm dừng đăng ký mới. Tài khoản đã có vẫn đăng nhập được.'),
+            const _Banner(text: 'The server isn\'t accepting new sign-ups right now. Existing accounts can still sign in.'),
           if (showApple) ...[
             SizedBox(
               height: 50,
               child: SignInWithAppleButton(
-                text: 'Tiếp tục với Apple',
+                text: 'Continue with Apple',
                 style: c.isDark ? SignInWithAppleButtonStyle.white : SignInWithAppleButtonStyle.black,
                 borderRadius: const BorderRadius.all(Radius.circular(14)),
                 onPressed: _busy ? () {} : () => _social(_acct.signInWithApple),
@@ -194,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 'G',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF4285F4)),
               ),
-              label: 'Tiếp tục với Google',
+              label: 'Continue with Google',
             ),
             const SizedBox(height: 12),
           ],
@@ -206,7 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Expanded(child: Divider()),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text('hoặc', style: TextStyle(color: c.textDim)),
+                    child: Text('or', style: TextStyle(color: c.textDim)),
                   ),
                   const Expanded(child: Divider()),
                 ],
@@ -229,7 +229,7 @@ class _LoginScreenState extends State<LoginScreen> {
               autofillHints: const [AutofillHints.password],
               textInputAction: TextInputAction.go,
               onSubmitted: (_) => _passwordLogin(),
-              decoration: const InputDecoration(labelText: 'Mật khẩu', prefixIcon: Icon(Icons.lock_outline)),
+              decoration: const InputDecoration(labelText: 'Password', prefixIcon: Icon(Icons.lock_outline)),
             ),
           ],
           if (_error != null) ...[const SizedBox(height: 12), Text(_error!, style: TextStyle(color: c.red))],
@@ -241,13 +241,13 @@ class _LoginScreenState extends State<LoginScreen> {
               style: FilledButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
               child: _busy
                   ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4))
-                  : Text(_withPassword ? 'Đăng nhập' : 'Tiếp tục với email', style: const TextStyle(fontSize: 16)),
+                  : Text(_withPassword ? 'Sign in' : 'Continue with email', style: const TextStyle(fontSize: 16)),
             ),
           ),
           const SizedBox(height: 6),
           if (!_withPassword)
             Text(
-              'Chúng tôi sẽ gửi mã 6 số tới email để đăng nhập hoặc tạo tài khoản.',
+              'We\'ll email you a 6-digit code to sign in or create an account.',
               textAlign: TextAlign.center,
               style: TextStyle(color: c.textDim, fontSize: 13),
             ),
@@ -259,12 +259,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   _withPassword = !_withPassword;
                   _error = null;
                 }),
-                child: Text(_withPassword ? 'Dùng mã qua email' : 'Đăng nhập bằng mật khẩu'),
+                child: Text(_withPassword ? 'Use an email code' : 'Sign in with password'),
               ),
               if (_withPassword)
                 TextButton(
                   onPressed: _busy ? null : () => _emailCode(forgot: true),
-                  child: const Text('Quên mật khẩu?'),
+                  child: const Text('Forgot password?'),
                 ),
             ],
           ),
@@ -274,7 +274,7 @@ class _LoginScreenState extends State<LoginScreen> {
               onPressed: _editServer,
               icon: Icon(Icons.dns_outlined, size: 18, color: c.textDim),
               label: Text(
-                'Máy chủ: ${_acct.serverUrl.isEmpty ? 'chưa đặt' : Uri.tryParse(_acct.serverUrl)?.authority ?? _acct.serverUrl}',
+                'Server: ${_acct.serverUrl.isEmpty ? 'not set' : Uri.tryParse(_acct.serverUrl)?.authority ?? _acct.serverUrl}',
                 style: TextStyle(color: c.textDim),
               ),
             ),
@@ -408,7 +408,7 @@ class _OtpScreenState extends State<OtpScreen> {
       await widget.app.account.startEmail(widget.email);
       if (!mounted) return;
       _startTimer();
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã gửi mã mới')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('New code sent')));
     } catch (e) {
       if (mounted) setState(() => _error = _friendly(e));
     }
@@ -418,14 +418,14 @@ class _OtpScreenState extends State<OtpScreen> {
   Widget build(BuildContext context) {
     final c = context.colors;
     return Scaffold(
-      appBar: AppBar(title: const Text('Nhập mã xác thực')),
+      appBar: AppBar(title: const Text('Enter verification code')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         children: [
           Text.rich(
             TextSpan(
               children: [
-                const TextSpan(text: 'Mã 6 số đã được gửi tới\n'),
+                const TextSpan(text: 'We sent a 6-digit code to\n'),
                 TextSpan(
                   text: widget.email,
                   style: const TextStyle(fontWeight: FontWeight.w700),
@@ -464,16 +464,16 @@ class _OtpScreenState extends State<OtpScreen> {
               onPressed: _busy ? null : _verify,
               child: _busy
                   ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4))
-                  : const Text('Xác nhận', style: TextStyle(fontSize: 16)),
+                  : const Text('Verify', style: TextStyle(fontSize: 16)),
             ),
           ),
           const SizedBox(height: 8),
           TextButton(
             onPressed: _wait > 0 ? null : _resend,
-            child: Text(_wait > 0 ? 'Gửi lại mã sau ${_wait}s' : 'Gửi lại mã'),
+            child: Text(_wait > 0 ? 'Resend code in ${_wait}s' : 'Resend code'),
           ),
           Text(
-            'Không thấy email? Kiểm tra thư mục Spam.',
+            'Didn\'t get the email? Check your spam folder.',
             textAlign: TextAlign.center,
             style: TextStyle(color: c.textDim, fontSize: 13),
           ),
@@ -512,8 +512,8 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
   }
 
   Future<void> _save() async {
-    if (_pw.text.length < 8) return setState(() => _error = 'Mật khẩu cần ít nhất 8 ký tự.');
-    if (_pw.text != _confirm.text) return setState(() => _error = 'Hai mật khẩu không khớp.');
+    if (_pw.text.length < 8) return setState(() => _error = 'Password must be at least 8 characters.');
+    if (_pw.text != _confirm.text) return setState(() => _error = 'Passwords don\'t match.');
     setState(() {
       _busy = true;
       _error = null;
@@ -524,7 +524,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
         current: widget.mode == PasswordMode.change ? _current.text : null,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã lưu mật khẩu')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Password saved')));
       Navigator.pop(context, true);
     } catch (e) {
       if (mounted) setState(() => _error = _friendly(e));
@@ -538,18 +538,18 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     final c = context.colors;
     final (title, intro) = switch (widget.mode) {
       PasswordMode.create => (
-        'Đặt mật khẩu',
-        'Đặt mật khẩu để lần sau đăng nhập bằng email + mật khẩu (không cần chờ mã). Bạn có thể bỏ qua và làm sau.',
+        'Set a password',
+        'Set a password to sign in with email and password next time (no code needed). You can skip this and do it later.',
       ),
-      PasswordMode.reset => ('Đặt mật khẩu mới', 'Nhập mật khẩu mới cho tài khoản.'),
-      PasswordMode.change => ('Đổi mật khẩu', 'Nhập mật khẩu hiện tại và mật khẩu mới.'),
+      PasswordMode.reset => ('Set a new password', 'Enter a new password for your account.'),
+      PasswordMode.change => ('Change password', 'Enter your current password and a new password.'),
     };
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
         actions: [
           if (widget.mode == PasswordMode.create)
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Bỏ qua')),
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Skip')),
         ],
       ),
       body: AutofillGroup(
@@ -563,7 +563,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                 controller: _current,
                 obscureText: true,
                 autofillHints: const [AutofillHints.password],
-                decoration: const InputDecoration(labelText: 'Mật khẩu hiện tại'),
+                decoration: const InputDecoration(labelText: 'Current password'),
               ),
               const SizedBox(height: 12),
             ],
@@ -572,8 +572,8 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
               obscureText: _obscure,
               autofillHints: const [AutofillHints.newPassword],
               decoration: InputDecoration(
-                labelText: 'Mật khẩu mới',
-                helperText: 'Ít nhất 8 ký tự',
+                labelText: 'New password',
+                helperText: 'At least 8 characters',
                 suffixIcon: IconButton(
                   icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
                   onPressed: () => setState(() => _obscure = !_obscure),
@@ -586,7 +586,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
               obscureText: _obscure,
               autofillHints: const [AutofillHints.newPassword],
               onSubmitted: (_) => _save(),
-              decoration: const InputDecoration(labelText: 'Nhập lại mật khẩu mới'),
+              decoration: const InputDecoration(labelText: 'Confirm new password'),
             ),
             if (_error != null) ...[const SizedBox(height: 12), Text(_error!, style: TextStyle(color: c.red))],
             const SizedBox(height: 20),
@@ -596,7 +596,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                 onPressed: _busy ? null : _save,
                 child: _busy
                     ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4))
-                    : const Text('Lưu mật khẩu', style: TextStyle(fontSize: 16)),
+                    : const Text('Save password', style: TextStyle(fontSize: 16)),
               ),
             ),
           ],

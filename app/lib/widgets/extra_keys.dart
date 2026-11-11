@@ -82,7 +82,7 @@ class ExtraKeys extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(right: 10, left: 4),
           child: SquareButton(
-            tooltip: keyboardVisible ? 'Ẩn bàn phím' : 'Hiện bàn phím',
+            tooltip: keyboardVisible ? 'Hide keyboard' : 'Show keyboard',
             onPressed: onToggleKeyboard,
             child: Icon(
               keyboardVisible ? Icons.keyboard_hide_outlined : Icons.keyboard_outlined,

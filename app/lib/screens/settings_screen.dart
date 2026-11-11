@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:xterm/xterm.dart';
 
 import '../env.dart';
 import '../services/app_services.dart';
 import '../services/settings_store.dart';
 import '../theme.dart';
+import '../util/platform.dart';
 import '../widgets/common.dart';
 import '../widgets/settings_tiles.dart';
 import 'account_screen.dart';
 import 'keys_screen.dart';
 import 'login_screen.dart';
+
+final sourceUrl = Uri.parse('https://github.com/dtekltd/mytermi');
+const donateAmounts = [5, 10, 20];
+Uri donateUrl(int usd) => Uri.parse('https://paypal.me/phthosting/${usd}USD');
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key, required this.app});
@@ -28,7 +34,7 @@ class SettingsScreen extends StatelessWidget {
             const PageHeader(title: 'Settings', subtitle: 'MyTermi'),
 
             // --------------------------------------------- account & sync
-            const SectionLabel('Tài khoản & đồng bộ'),
+            const SectionLabel('Account & sync'),
             SettingsGroup(children: [
               if (app.account.account case final a?)
                 SettingsTile(
@@ -41,26 +47,26 @@ class SettingsScreen extends StatelessWidget {
               else
                 SettingsTile(
                   icon: Icons.cloud_sync_outlined,
-                  title: 'Đăng nhập / Đăng ký',
-                  subtitle: 'Đồng bộ host, key, snippet giữa các thiết bị (mã hoá đầu-cuối)',
+                  title: 'Sign in / Create account',
+                  subtitle: 'Sync hosts, keys and snippets across devices (end-to-end encrypted)',
                   trailing: Icon(Icons.chevron_right, color: context.colors.textDim),
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LoginScreen(app: app))),
                 ),
             ]),
 
             // ------------------------------------------------ appearance
-            const SectionLabel('Giao diện'),
+            const SectionLabel('Appearance'),
             SettingsGroup(
               children: [
                 SettingsTile(
                   icon: Icons.brightness_6_outlined,
-                  title: 'Chế độ hiển thị',
+                  title: 'Theme',
                   below: SegmentedButton<ThemeMode>(
                     showSelectedIcon: false,
                     segments: const [
-                      ButtonSegment(value: ThemeMode.system, label: Text('Hệ thống')),
-                      ButtonSegment(value: ThemeMode.light, label: Text('Sáng')),
-                      ButtonSegment(value: ThemeMode.dark, label: Text('Tối')),
+                      ButtonSegment(value: ThemeMode.system, label: Text('System')),
+                      ButtonSegment(value: ThemeMode.light, label: Text('Light')),
+                      ButtonSegment(value: ThemeMode.dark, label: Text('Dark')),
                     ],
                     selected: {s.themeMode},
                     onSelectionChanged: (v) => s.themeMode = v.first,
@@ -68,14 +74,14 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 SettingsTile(
                   icon: Icons.palette_outlined,
-                  title: 'Màu terminal',
-                  subtitle: 'Có thể giữ terminal tối khi app ở chế độ sáng',
+                  title: 'Terminal colors',
+                  subtitle: 'Keep the terminal dark while the app is in light mode',
                   below: SegmentedButton<TerminalColors>(
                     showSelectedIcon: false,
                     segments: const [
                       ButtonSegment(value: TerminalColors.auto, label: Text('Theo app')),
-                      ButtonSegment(value: TerminalColors.light, label: Text('Sáng')),
-                      ButtonSegment(value: TerminalColors.dark, label: Text('Tối')),
+                      ButtonSegment(value: TerminalColors.light, label: Text('Light')),
+                      ButtonSegment(value: TerminalColors.dark, label: Text('Dark')),
                     ],
                     selected: {s.terminalColors},
                     onSelectionChanged: (v) => s.terminalColors = v.first,
@@ -90,7 +96,7 @@ class SettingsScreen extends StatelessWidget {
               children: [
                 SettingsTile(
                   icon: Icons.format_size,
-                  title: 'Cỡ chữ',
+                  title: 'Font size',
                   trailing: Text('${s.fontSize.round()}', style: const TextStyle(fontSize: 16)),
                   below: Slider(
                     min: SettingsStore.minFont,
@@ -103,12 +109,12 @@ class SettingsScreen extends StatelessWidget {
                 _Preview(fontSize: s.fontSize, colors: s.terminalColors, cursor: s.cursorType),
                 SettingsTile(
                   icon: Icons.text_fields,
-                  title: 'Kiểu con trỏ',
+                  title: 'Cursor style',
                   below: SegmentedButton<TerminalCursorType>(
                     showSelectedIcon: false,
                     segments: const [
-                      ButtonSegment(value: TerminalCursorType.block, label: Text('Khối')),
-                      ButtonSegment(value: TerminalCursorType.underline, label: Text('Gạch dưới')),
+                      ButtonSegment(value: TerminalCursorType.block, label: Text('Block')),
+                      ButtonSegment(value: TerminalCursorType.underline, label: Text('Underline')),
                       ButtonSegment(value: TerminalCursorType.verticalBar, label: Text('Thanh')),
                     ],
                     selected: {s.cursorType},
@@ -119,18 +125,18 @@ class SettingsScreen extends StatelessWidget {
             ),
 
             // -------------------------------------------------- gestures
-            const SectionLabel('Thao tác'),
+            const SectionLabel('Gestures'),
             SettingsGroup(
               children: [
                 SettingsTile(
                   icon: Icons.swipe,
-                  title: 'Độ nhạy vuốt mũi tên',
-                  subtitle: 'Cao = vuốt ngắn hơn cho mỗi lần bấm',
+                  title: 'Arrow swipe sensitivity',
+                  subtitle: 'High = shorter swipe per key press',
                   below: SegmentedButton<SwipeSensitivity>(
                     showSelectedIcon: false,
                     segments: const [
-                      ButtonSegment(value: SwipeSensitivity.low, label: Text('Thấp')),
-                      ButtonSegment(value: SwipeSensitivity.medium, label: Text('Vừa')),
+                      ButtonSegment(value: SwipeSensitivity.low, label: Text('Low')),
+                      ButtonSegment(value: SwipeSensitivity.medium, label: Text('Medium')),
                       ButtonSegment(value: SwipeSensitivity.high, label: Text('Cao')),
                     ],
                     selected: {s.swipe},
@@ -139,19 +145,19 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 SettingsSwitch(
                   icon: Icons.touch_app_outlined,
-                  title: 'Double tap = phím Tab',
+                  title: 'Double tap = Tab key',
                   value: s.doubleTapTab,
                   onChanged: (v) => s.doubleTapTab = v,
                 ),
                 SettingsSwitch(
                   icon: Icons.vibration,
-                  title: 'Rung phản hồi',
+                  title: 'Haptic feedback',
                   value: s.haptics,
                   onChanged: (v) => s.haptics = v,
                 ),
                 SettingsSwitch(
                   icon: Icons.logout,
-                  title: 'Hỏi trước khi đóng session',
+                  title: 'Confirm before closing a session',
                   value: s.confirmClose,
                   onChanged: (v) => s.confirmClose = v,
                 ),
@@ -159,19 +165,19 @@ class SettingsScreen extends StatelessWidget {
             ),
 
             // --------------------------------------------------- history
-            const SectionLabel('Gợi ý & lịch sử lệnh'),
+            const SectionLabel('Suggestions & history'),
             SettingsGroup(
               children: [
                 SettingsSwitch(
                   icon: Icons.auto_awesome_outlined,
-                  title: 'Gợi ý lệnh khi gõ',
+                  title: 'Suggest commands while typing',
                   value: s.suggestions,
                   onChanged: (v) => s.suggestions = v,
                 ),
                 SettingsSwitch(
                   icon: Icons.history,
-                  title: 'Lưu lịch sử lệnh',
-                  subtitle: 'Chỉ lưu lệnh được server hiện lại — không bao giờ lưu password',
+                  title: 'Save command history',
+                  subtitle: 'Only saves commands echoed by the server — never passwords',
                   value: s.saveHistory,
                   onChanged: (v) => s.saveHistory = v,
                 ),
@@ -179,13 +185,13 @@ class SettingsScreen extends StatelessWidget {
             ),
 
             // ------------------------------------------------- data
-            const SectionLabel('Dữ liệu & bảo mật'),
+            const SectionLabel('Data & security'),
             SettingsGroup(
               children: [
                 SettingsTile(
                   icon: Icons.key_rounded,
                   title: 'Private keys',
-                  subtitle: 'Quản lý SSH key dùng chung cho các host',
+                  subtitle: 'Manage SSH keys shared across hosts',
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -197,44 +203,69 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 SettingsTile(
                   icon: Icons.delete_sweep_outlined,
-                  title: 'Xoá toàn bộ lịch sử lệnh',
+                  title: 'Clear command history',
                   danger: true,
                   onTap: () => _confirm(
                     context,
-                    title: 'Xoá toàn bộ lịch sử lệnh?',
-                    body: 'Lịch sử của tất cả host sẽ bị xoá. Snippet được giữ lại.',
+                    title: 'Clear all command history?',
+                    body: 'History for all hosts will be deleted. Snippets are kept.',
                     action: () async {
                       await app.commands.clearAllHistory();
                       for (final x in app.sessions.sessions) {
                         x.refreshSuggestions();
                       }
-                      return 'Đã xoá lịch sử lệnh';
+                      return 'Command history cleared';
                     },
                   ),
                 ),
                 SettingsTile(
                   icon: Icons.gpp_maybe_outlined,
-                  title: 'Quên các host key đã tin',
-                  subtitle: 'Lần kết nối sau sẽ hỏi lại fingerprint',
+                  title: 'Forget trusted host keys',
+                  subtitle: 'You will be asked to verify the fingerprint on the next connection',
                   danger: true,
                   onTap: () => _confirm(
                     context,
-                    title: 'Quên tất cả host key?',
-                    body: 'Bạn sẽ phải xác nhận lại fingerprint khi kết nối tới từng server.',
-                    action: () async => 'Đã xoá ${await app.hosts.clearKnownHosts()} host key',
+                    title: 'Forget all host keys?',
+                    body: 'You will need to verify the fingerprint again when connecting to each server.',
+                    action: () async => 'Removed ${await app.hosts.clearKnownHosts()} host keys',
                   ),
                 ),
               ],
             ),
 
-            const SectionLabel('Thông tin'),
+            const SectionLabel('About'),
             SettingsGroup(
               children: [
                 SettingsTile(
                   icon: Icons.info_outline,
                   title: 'MyTermi',
-                  subtitle: 'SSH client · phiên bản 1.0.0${isProd ? '' : ' · $appEnv'}',
+                  subtitle: 'SSH client · version 1.0.0${isProd ? '' : ' · $appEnv'}',
                 ),
+                SettingsTile(
+                  icon: Icons.code,
+                  title: 'Source code',
+                  subtitle: 'github.com/dtekltd/mytermi · Apache License 2.0',
+                  trailing: const Icon(Icons.open_in_new, size: 18),
+                  onTap: () => _open(context, sourceUrl),
+                ),
+                // Store rules require in-app purchase for tips on iOS/Android, so the
+                // PayPal links are only offered in the desktop builds.
+                if (isDesktop)
+                  SettingsTile(
+                    icon: Icons.coffee_outlined,
+                    title: 'Buy me a coffee',
+                    subtitle: 'MyTermi is free. If it helps you, a tip via PayPal keeps it going.',
+                    below: Wrap(
+                      spacing: 8,
+                      children: [
+                        for (final usd in donateAmounts)
+                          OutlinedButton(
+                            onPressed: () => _open(context, donateUrl(usd)),
+                            child: Text('$usd USD'),
+                          ),
+                      ],
+                    ),
+                  ),
                 const SettingsTile(
                   icon: Icons.font_download_outlined,
                   title: 'Font JetBrains Mono',
@@ -246,6 +277,13 @@ class SettingsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _open(BuildContext context, Uri url) async {
+    final messenger = ScaffoldMessenger.of(context);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      messenger.showSnackBar(SnackBar(content: Text('Could not open $url')));
+    }
   }
 
   Future<void> _confirm(
@@ -261,11 +299,11 @@ class SettingsScreen extends StatelessWidget {
         title: Text(title),
         content: Text(body),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: ctx.colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Xoá'),
+            child: const Text('Delete'),
           ),
         ],
       ),

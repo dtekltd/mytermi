@@ -41,13 +41,13 @@ if [[ -f .fvmrc ]] && command -v fvm >/dev/null 2>&1; then
   if [[ -x .fvm/flutter_sdk/bin/flutter ]]; then
     fvm_sdk="$PWD/.fvm/flutter_sdk"
   elif [[ ! -x $fvm_sdk/bin/flutter ]]; then
-    echo "… Cài Flutter $fvm_ver qua FVM (lần đầu)"
+    echo "… Installing Flutter $fvm_ver via FVM (first run)"
     fvm install "$fvm_ver"
   fi
   if [[ -x $fvm_sdk/bin/flutter ]]; then
     export PATH="$fvm_sdk/bin:$PATH"
   else
-    echo "✗ Không tìm thấy Flutter $fvm_ver của FVM ở $fvm_sdk" >&2; exit 1
+    echo "✗ FVM Flutter $fvm_ver not found at $fvm_sdk" >&2; exit 1
   fi
 fi
 if ! command -v flutter >/dev/null 2>&1; then
@@ -55,16 +55,16 @@ if ! command -v flutter >/dev/null 2>&1; then
     if [[ -n "$d" && -x "$d/bin/flutter" ]]; then export PATH="$d/bin:$PATH"; break; fi
   done
 fi
-command -v flutter >/dev/null 2>&1 || { echo "✗ Không tìm thấy flutter (thêm vào PATH hoặc đặt FLUTTER_ROOT)." >&2; exit 1; }
+command -v flutter >/dev/null 2>&1 || { echo "✗ flutter not found (add it to PATH or set FLUTTER_ROOT)." >&2; exit 1; }
 if [[ -z "${ANDROID_HOME:-}" && -d "$HOME/sdk/android" ]]; then export ANDROID_HOME="$HOME/sdk/android"; fi
 
 if [[ $platform == ios && "$(uname -s)" != Darwin ]]; then
-  echo "✗ iOS chỉ chạy/build được trên macOS (cần Xcode)." >&2; exit 1
+  echo "✗ iOS can only be run/built on macOS (requires Xcode)." >&2; exit 1
 fi
 if [[ $platform == windows ]]; then
   case "$(uname -s)" in
     MINGW*|MSYS*|CYGWIN*) ;;
-    *) echo "✗ Bản Windows chỉ chạy/build được trên Windows (dùng run.cmd, cần Visual Studio C++)." >&2; exit 1 ;;
+    *) echo "✗ The Windows app can only be run/built on Windows (use run.cmd, requires Visual Studio C++)." >&2; exit 1 ;;
   esac
 fi
 
@@ -81,7 +81,7 @@ if [[ $mode == build ]]; then
     rel=build/windows/x64/runner/Release
     powershell -NoProfile -Command "Compress-Archive -Force -Path $rel/* -DestinationPath build/windows/MyTermi-windows-x64.zip"
     echo "✓ App: $rel/mytermi.exe"
-    echo "✓ Zip: build/windows/MyTermi-windows-x64.zip (giải nén rồi chạy mytermi.exe)"
+    echo "✓ Zip: build/windows/MyTermi-windows-x64.zip (unzip, then run mytermi.exe)"
   elif [[ $platform == android ]]; then
     set -x; flutter build apk --release "${defines[@]}" "${extra[@]}"; { set +x; } 2>/dev/null
     echo "✓ APK: build/app/outputs/flutter-apk/"
@@ -121,21 +121,21 @@ fi
 if ! $has_device_arg; then
   devices=$(list_devices)
   if [[ $platform == ios && $mode == prod ]] && ! has_real "$devices"; then
-    echo "… Đang tìm iPhone/iPad thật (cáp hoặc Wi-Fi)…"
+    echo "… Looking for a physical iPhone/iPad (cable or Wi-Fi)…"
     more=$(list_devices 10)
     [[ -n $more ]] && devices=$more
   fi
   if [[ -z $devices && $platform == ios ]]; then
-    echo "… Không có thiết bị iOS, đang mở Simulator"
+    echo "… No iOS device found, opening Simulator"
     open -a Simulator || true
     for _ in $(seq 1 30); do sleep 2; devices=$(list_devices); [[ -n $devices ]] && break; done
   fi
   if [[ -z $devices ]]; then
-    echo "✗ Không tìm thấy thiết bị $platform nào đang kết nối." >&2
+    echo "✗ No connected $platform device found." >&2
     if [[ $platform == android ]]; then
-      echo "  Cắm điện thoại (bật USB debugging) hoặc mở emulator: flutter emulators --launch <id>" >&2
+      echo "  Plug in a phone (with USB debugging on) or start an emulator: flutter emulators --launch <id>" >&2
     else
-      echo "  Cắm iPhone qua cáp/Wi-Fi (bật Developer Mode) hoặc mở Simulator." >&2
+      echo "  Connect an iPhone via cable/Wi-Fi (with Developer Mode on) or open Simulator." >&2
     fi
     exit 1
   fi
@@ -144,21 +144,21 @@ if ! $has_device_arg; then
   if [[ -z $pick ]]; then
     if [[ $mode == prod && $platform == ios ]]; then
       cat >&2 <<'EOF'
-✗ Chế độ prod (release) không chạy được trên iOS Simulator, cần iPhone thật, nhưng Flutter chưa thấy iPhone nào.
-  Kiểm tra trên iPhone:
-    1. Mở khoá màn hình, bấm "Tin cậy" (Trust) khi được hỏi lúc cắm cáp.
-    2. Bật Developer Mode: Cài đặt › Quyền riêng tư & Bảo mật › Chế độ nhà phát triển, rồi khởi động lại máy.
-  Trên Mac:
-    3. Mở Xcode › Window › Devices and Simulators, đợi iPhone hiện ra và chuẩn bị xong (lần đầu có thể mất vài phút).
-    4. Chạy `flutter devices` (hoặc `fvm flutter devices`) để xem iPhone đã được liệt kê chưa.
-  Danh sách Flutter đang thấy:
+✗ prod (release) mode can't run on the iOS Simulator and needs a physical iPhone, but Flutter doesn't see one.
+  On the iPhone:
+    1. Unlock the screen and tap "Trust" when asked after plugging in the cable.
+    2. Turn on Developer Mode: Settings › Privacy & Security › Developer Mode, then restart the phone.
+  On the Mac:
+    3. Open Xcode › Window › Devices and Simulators and wait until the iPhone shows up and finishes preparing (the first time can take a few minutes).
+    4. Run `flutter devices` (or `fvm flutter devices`) to check that the iPhone is listed.
+  Devices Flutter currently sees:
 EOF
       flutter devices 2>&1 | sed 's/^/    /' >&2
       exit 1
     fi
     pick=$(printf '%s\n' "$devices" | head -1)
   fi
-  echo "→ Thiết bị: $(cut -f3 <<<"$pick") ($(cut -f1 <<<"$pick"))"
+  echo "→ Device: $(cut -f3 <<<"$pick") ($(cut -f1 <<<"$pick"))"
   extra=(-d "$(cut -f1 <<<"$pick")" "${extra[@]}")
 fi
 

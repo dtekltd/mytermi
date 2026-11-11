@@ -25,24 +25,24 @@ class SnippetsScreen extends StatelessWidget {
           return Column(children: [
             PageHeader(
               title: 'Snippets',
-              subtitle: '${list.length} lệnh',
+              subtitle: '${list.length} ${list.length == 1 ? 'command' : 'commands'}',
               leading: standalone
                   ? CircleButton(icon: Icons.chevron_left, onPressed: () => Navigator.pop(context))
                   : null,
               actions: [
-                CircleButton(icon: Icons.add, tooltip: 'Thêm snippet', onPressed: () => editSnippet(context, store)),
+                CircleButton(icon: Icons.add, tooltip: 'Add snippet', onPressed: () => editSnippet(context, store)),
               ],
             ),
             Expanded(
               child: list.isEmpty
                   ? EmptyState(
                       icon: Icons.bolt_outlined,
-                      text: 'Snippet là các lệnh hay dùng, chạy chỉ với một lần chạm.\n\n'
-                          'VD: "Xem log nginx" → sudo tail -f /var/log/nginx/error.log',
+                      text: 'Snippets are frequently used commands you can run with a single tap.\n\n'
+                          'e.g. "View nginx log" → sudo tail -f /var/log/nginx/error.log',
                       action: FilledButton.icon(
                         onPressed: () => editSnippet(context, store),
                         icon: const Icon(Icons.add),
-                        label: const Text('Thêm snippet'),
+                        label: const Text('Add snippet'),
                       ),
                     )
                   : ReorderableListView.builder(
@@ -142,11 +142,11 @@ class _SnippetEditScreenState extends State<_SnippetEditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.snippet == null ? 'Snippet mới' : 'Sửa snippet'),
+        title: Text(widget.snippet == null ? 'New snippet' : 'Edit snippet'),
         actions: [
           if (widget.snippet != null)
-            IconButton(tooltip: 'Xoá', icon: const Icon(Icons.delete_outline), onPressed: _delete),
-          TextButton(onPressed: _save, child: const Text('Lưu')),
+            IconButton(tooltip: 'Delete', icon: const Icon(Icons.delete_outline), onPressed: _delete),
+          TextButton(onPressed: _save, child: const Text('Save')),
         ],
       ),
       body: Form(
@@ -156,7 +156,7 @@ class _SnippetEditScreenState extends State<_SnippetEditScreen> {
           children: [
             TextFormField(
               controller: _name,
-              decoration: const InputDecoration(labelText: 'Tên', hintText: 'VD: Restart nginx'),
+              decoration: const InputDecoration(labelText: 'Name', hintText: 'e.g. Restart nginx'),
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -168,18 +168,18 @@ class _SnippetEditScreenState extends State<_SnippetEditScreen> {
               maxLines: 10,
               style: const TextStyle(fontFamily: monoFont),
               decoration: const InputDecoration(
-                labelText: 'Lệnh',
+                labelText: 'Command',
                 hintText: 'sudo systemctl restart nginx',
-                helperText: 'Nhiều dòng = chạy lần lượt từng lệnh',
+                helperText: 'Multiple lines = run each command in turn',
                 alignLabelWithHint: true,
               ),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Bắt buộc' : null,
+              validator: (v) => (v ?? '').trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 12),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Chạy ngay khi chọn'),
-              subtitle: const Text('Tự nhấn Enter. Tắt đi nếu muốn sửa lệnh trước khi chạy.'),
+              title: const Text('Run immediately when selected'),
+              subtitle: const Text('Presses Enter automatically. Turn off to edit the command before running it.'),
               value: _autoRun,
               onChanged: (v) => setState(() => _autoRun = v),
             ),

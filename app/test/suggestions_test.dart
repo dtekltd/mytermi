@@ -19,9 +19,9 @@ void main() {
     });
 
     test('unicode backspace removes whole char', () {
-      final t = InputLineTracker()..feed('echo chào');
+      final t = InputLineTracker()..feed('echo groß');
       t.feed('\x7f');
-      expect(t.line, 'echo chà');
+      expect(t.line, 'echo gro');
     });
 
     test('arrow keys / tab make line unreliable until Enter', () {

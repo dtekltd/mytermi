@@ -82,20 +82,20 @@ class KeyParseException implements Exception {
 /// Parses an OpenSSH / PEM private key. Throws [KeyParseException].
 ParsedKey parsePrivateKey(String pem, String? passphrase) {
   final text = pem.trim();
-  if (text.isEmpty) throw KeyParseException('Dán private key vào đây');
+  if (text.isEmpty) throw KeyParseException('Paste the private key here');
   final pp = (passphrase == null || passphrase.isEmpty) ? null : passphrase;
   try {
     if (SSHKeyPair.isEncryptedPem(text) && pp == null) {
-      throw KeyParseException('Key đã mã hoá, nhập passphrase bên dưới');
+      throw KeyParseException('Key is encrypted, enter the passphrase below');
     }
     final pairs = SSHKeyPair.fromPem(text, pp);
-    if (pairs.isEmpty) throw KeyParseException('Không đọc được key');
+    if (pairs.isEmpty) throw KeyParseException('Could not read the key');
     final pair = pairs.first;
     return ParsedKey(type: pair.name, publicBlob: pair.toPublicKey().encode());
   } on KeyParseException {
     rethrow;
   } catch (_) {
-    throw KeyParseException(pp == null ? 'Key không hợp lệ' : 'Key không hợp lệ hoặc sai passphrase');
+    throw KeyParseException(pp == null ? 'Invalid key' : 'Invalid key or wrong passphrase');
   }
 }
 

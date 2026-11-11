@@ -87,9 +87,9 @@ class _HostEditScreenState extends State<HostEditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEdit ? 'Sửa host' : 'Thêm host'),
+        title: Text(_isEdit ? 'Edit host' : 'Add host'),
         actions: [
-          TextButton(onPressed: _saving ? null : _save, child: const Text('Lưu')),
+          TextButton(onPressed: _saving ? null : _save, child: const Text('Save')),
         ],
       ),
       body: Form(
@@ -99,7 +99,7 @@ class _HostEditScreenState extends State<HostEditScreen> {
           children: [
             TextFormField(
               controller: _label,
-              decoration: const InputDecoration(labelText: 'Tên hiển thị (tuỳ chọn)', hintText: 'VD: Ubuntu prod'),
+              decoration: const InputDecoration(labelText: 'Display name (optional)', hintText: 'e.g. Ubuntu prod'),
             ),
             const SizedBox(height: 12),
             Row(
@@ -111,7 +111,7 @@ class _HostEditScreenState extends State<HostEditScreen> {
                     keyboardType: TextInputType.url,
                     autocorrect: false,
                     decoration: const InputDecoration(labelText: 'Host / IP'),
-                    validator: (v) => (v ?? '').trim().isEmpty ? 'Bắt buộc' : null,
+                    validator: (v) => (v ?? '').trim().isEmpty ? 'Required' : null,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -133,7 +133,7 @@ class _HostEditScreenState extends State<HostEditScreen> {
               controller: _username,
               autocorrect: false,
               decoration: const InputDecoration(labelText: 'Username', hintText: 'ubuntu'),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Bắt buộc' : null,
+              validator: (v) => (v ?? '').trim().isEmpty ? 'Required' : null,
             ),
             const SizedBox(height: 20),
             SegmentedButton<AuthMethod>(
@@ -151,7 +151,7 @@ class _HostEditScreenState extends State<HostEditScreen> {
                 obscureText: _obscure,
                 decoration: InputDecoration(
                   labelText: 'Password',
-                  helperText: 'Để trống nếu muốn nhập mỗi lần kết nối',
+                  helperText: 'Leave empty to enter it on each connection',
                   suffixIcon: IconButton(
                     icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
                     onPressed: () => setState(() => _obscure = !_obscure),
@@ -161,7 +161,7 @@ class _HostEditScreenState extends State<HostEditScreen> {
             else
               FormField<String>(
                 initialValue: _keyId,
-                validator: (_) => _keyId == null ? 'Chọn một private key' : null,
+                validator: (_) => _keyId == null ? 'Choose a private key' : null,
                 builder: (field) {
                   final k = widget.store.keyById(_keyId);
                   return _KeyPickerTile(
@@ -174,8 +174,8 @@ class _HostEditScreenState extends State<HostEditScreen> {
               ),
             const SizedBox(height: 24),
             Text(
-              'Password và private key được lưu mã hoá trong Keychain (iOS) / Keystore (Android). '
-              'Quản lý key trong Settings › Private keys.',
+              'Passwords and private keys are stored encrypted in the Keychain (iOS) / Keystore (Android). '
+              'Manage keys in Settings › Private keys.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -219,7 +219,7 @@ class _KeyPickerTile extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(keyLabel ?? 'Chọn private key',
+                  Text(keyLabel ?? 'Choose private key',
                       style: TextStyle(fontSize: 16, color: keyLabel == null ? c.textDim : c.text)),
                   if (keyInfo != null)
                     Text(keyInfo!,

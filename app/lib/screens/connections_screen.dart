@@ -22,12 +22,12 @@ class ConnectionsScreen extends StatelessWidget {
         builder: (context, _) {
           final list = m.sessions;
           return Column(children: [
-            PageHeader(title: 'Connections', subtitle: '${list.length} đang mở'),
+            PageHeader(title: 'Connections', subtitle: '${list.length} open'),
             Expanded(
               child: list.isEmpty
                   ? const EmptyState(
                       icon: Icons.terminal_rounded,
-                      text: 'Chưa có kết nối nào.\nChọn một host ở tab Hosts để bắt đầu.',
+                      text: 'No connections yet.\nPick a host in the Hosts tab to get started.',
                     )
                   : ListView(
                       padding: const EdgeInsets.only(bottom: 120),
@@ -42,16 +42,16 @@ class ConnectionsScreen extends StatelessWidget {
                             },
                             title: m.titleOf(s),
                             subtitle: '${s.host.address} · ${switch (s.status) {
-                              SessionStatus.connected => 'đang kết nối',
-                              SessionStatus.disconnected => 'đã ngắt',
-                              _ => 'đang kết nối…',
+                              SessionStatus.connected => 'connected',
+                              SessionStatus.disconnected => 'disconnected',
+                              _ => 'connecting…',
                             }}',
                             onTap: () {
                               m.activate(s);
                               openTerminal(context, app);
                             },
                             trailing: IconButton(
-                              tooltip: 'Đóng',
+                              tooltip: 'Close',
                               icon: Icon(Icons.close, color: c.textDim),
                               onPressed: () => m.close(s),
                             ),

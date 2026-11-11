@@ -46,7 +46,7 @@ void main() {
     test('errors are user friendly', () {
       expect(() => parsePrivateKey('', null), throwsA(isA<KeyParseException>()));
       expect(() => parsePrivateKey('garbage', null),
-          throwsA(isA<KeyParseException>().having((e) => e.message, 'msg', 'Key không hợp lệ')));
+          throwsA(isA<KeyParseException>().having((e) => e.message, 'msg', 'Invalid key')));
     });
 
     test('encrypted key needs the passphrase', () {

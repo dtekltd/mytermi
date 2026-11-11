@@ -8,9 +8,9 @@ import '../theme.dart';
 
 String _friendly(Object e) => switch (e) {
   ApiException() => e.friendly,
-  VaultDecryptException() => 'Sai mật khẩu vault.',
-  FormatException() => 'Recovery key không đúng định dạng (32 ký tự).',
-  _ => 'Có lỗi xảy ra: $e',
+  VaultDecryptException() => 'Wrong vault password.',
+  FormatException() => 'Invalid recovery key format (32 characters).',
+  _ => 'Something went wrong: $e',
 };
 
 /// Common layout for the vault forms.
@@ -51,7 +51,7 @@ Widget _submit(bool busy, String label, VoidCallback? onPressed) => SizedBox(
 
 /// Two password fields with validation; reused by setup / change / recover.
 class _NewPassword extends StatefulWidget {
-  const _NewPassword({required this.pw, required this.confirm, this.label = 'Mật khẩu vault'});
+  const _NewPassword({required this.pw, required this.confirm, this.label = 'Vault password'});
   final TextEditingController pw;
   final TextEditingController confirm;
   final String label;
@@ -74,7 +74,7 @@ class _NewPasswordState extends State<_NewPassword> {
           enableSuggestions: false,
           decoration: InputDecoration(
             labelText: widget.label,
-            helperText: 'Ít nhất 8 ký tự. Nên khác mật khẩu đăng nhập.',
+            helperText: 'At least 8 characters. Use a different one from your account password.',
             suffixIcon: IconButton(
               icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
               onPressed: () => setState(() => _obscure = !_obscure),
@@ -87,7 +87,7 @@ class _NewPasswordState extends State<_NewPassword> {
           obscureText: _obscure,
           autocorrect: false,
           enableSuggestions: false,
-          decoration: InputDecoration(labelText: 'Nhập lại ${widget.label.toLowerCase()}'),
+          decoration: InputDecoration(labelText: 'Confirm ${widget.label.toLowerCase()}'),
         ),
       ],
     );
@@ -95,8 +95,8 @@ class _NewPasswordState extends State<_NewPassword> {
 }
 
 String? _checkNew(TextEditingController pw, TextEditingController confirm) {
-  if (pw.text.length < 8) return 'Mật khẩu vault cần ít nhất 8 ký tự.';
-  if (pw.text != confirm.text) return 'Hai mật khẩu không khớp.';
+  if (pw.text.length < 8) return 'Vault password must be at least 8 characters.';
+  if (pw.text != confirm.text) return 'Passwords don\'t match.';
   return null;
 }
 
@@ -163,16 +163,16 @@ class _VaultSetupScreenState extends State<VaultSetupScreen> with _Busy {
   @override
   Widget build(BuildContext context) {
     return _VaultForm(
-      title: 'Bật đồng bộ',
+      title: 'Turn on sync',
       intro:
-          'Dữ liệu (host, private key, password SSH, snippet) được mã hoá ngay trên máy bằng mật khẩu vault '
-          'trước khi gửi lên máy chủ. Máy chủ và quản trị viên không đọc được.\n\n'
-          'Mật khẩu vault không gửi đi đâu cả, nên không thể lấy lại nếu quên. Bạn sẽ nhận một recovery key để dự phòng.',
+          'Your data (hosts, private keys, SSH passwords, snippets) is encrypted on this device with your vault password '
+          'before it is sent to the server. Neither the server nor its administrators can read it.\n\n'
+          'Your vault password never leaves this device, so it can\'t be recovered if you forget it. You\'ll get a recovery key as a backup.',
       children: [
         _NewPassword(pw: _pw, confirm: _confirm),
         errorText(context),
         const SizedBox(height: 20),
-        _submit(busy, 'Tạo vault & đồng bộ', _create),
+        _submit(busy, 'Create vault & sync', _create),
       ],
     );
   }
@@ -203,8 +203,8 @@ class _RecoveryKeyScreenState extends State<RecoveryKeyScreen> {
             Icon(Icons.key_rounded, size: 48, color: c.amber),
             const SizedBox(height: 12),
             Text(
-              'Lưu recovery key ở nơi an toàn (trình quản lý mật khẩu, giấy cất kỹ). Đây là cách duy nhất '
-              'để mở dữ liệu đồng bộ nếu bạn quên mật khẩu vault. Key chỉ hiện một lần.',
+              'Store your recovery key somewhere safe (a password manager, or on paper kept securely). It is the only way '
+              'to unlock your synced data if you forget your vault password. It is shown only once.',
               style: TextStyle(color: c.textDim, height: 1.45),
             ),
             const SizedBox(height: 20),
@@ -224,10 +224,10 @@ class _RecoveryKeyScreenState extends State<RecoveryKeyScreen> {
             const SizedBox(height: 12),
             OutlinedButton.icon(
               icon: const Icon(Icons.copy),
-              label: const Text('Sao chép'),
+              label: const Text('Copy'),
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: widget.recoveryKey));
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã sao chép recovery key')));
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Recovery key copied')));
               },
             ),
             const SizedBox(height: 16),
@@ -236,7 +236,7 @@ class _RecoveryKeyScreenState extends State<RecoveryKeyScreen> {
               onChanged: (v) => setState(() => _saved = v ?? false),
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
-              title: const Text('Tôi đã lưu recovery key'),
+              title: const Text('I have saved my recovery key'),
             ),
             const SizedBox(height: 8),
             _submit(false, 'Xong', _saved ? () => Navigator.pop(context) : null),
@@ -274,8 +274,8 @@ class _VaultUnlockScreenState extends State<VaultUnlockScreen> with _Busy {
   Widget build(BuildContext context) {
     final c = context.colors;
     return _VaultForm(
-      title: 'Mở khoá đồng bộ',
-      intro: 'Nhập mật khẩu vault bạn đã đặt trên thiết bị đầu tiên. Máy này sẽ nhớ để không phải nhập lại.',
+      title: 'Unlock sync',
+      intro: 'Enter the vault password you set on your first device. This device will remember it so you don\'t have to enter it again.',
       children: [
         TextField(
           controller: _pw,
@@ -283,24 +283,24 @@ class _VaultUnlockScreenState extends State<VaultUnlockScreen> with _Busy {
           autofocus: true,
           autocorrect: false,
           onSubmitted: (_) => _unlock(),
-          decoration: const InputDecoration(labelText: 'Mật khẩu vault'),
+          decoration: const InputDecoration(labelText: 'Vault password'),
         ),
         errorText(context),
         const SizedBox(height: 20),
-        _submit(busy, 'Mở khoá', _unlock),
+        _submit(busy, 'Unlock', _unlock),
         const SizedBox(height: 12),
         TextButton(
           onPressed: () => Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => VaultRecoverScreen(app: widget.app)),
           ),
-          child: const Text('Quên mật khẩu vault? Dùng recovery key'),
+          child: const Text('Forgot your vault password? Use your recovery key'),
         ),
         TextButton(
           style: TextButton.styleFrom(foregroundColor: c.red),
           onPressed: () =>
               Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => VaultResetScreen(app: widget.app))),
-          child: const Text('Mất cả hai? Reset đồng bộ'),
+          child: const Text('Lost both? Reset sync'),
         ),
       ],
     );
@@ -335,7 +335,7 @@ class _VaultRecoverScreenState extends State<VaultRecoverScreen> with _Busy {
     run(() async {
       await widget.app.sync.recover(_key.text, _pw.text);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã mở khoá và đặt mật khẩu vault mới')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Unlocked and set a new vault password')));
       Navigator.pop(context);
     });
   }
@@ -343,8 +343,8 @@ class _VaultRecoverScreenState extends State<VaultRecoverScreen> with _Busy {
   @override
   Widget build(BuildContext context) {
     return _VaultForm(
-      title: 'Dùng recovery key',
-      intro: 'Nhập recovery key (32 ký tự) rồi đặt mật khẩu vault mới. Các thiết bị khác vẫn tiếp tục đồng bộ.',
+      title: 'Use recovery key',
+      intro: 'Enter your recovery key (32 characters), then set a new vault password. Your other devices keep syncing.',
       children: [
         TextField(
           controller: _key,
@@ -356,10 +356,10 @@ class _VaultRecoverScreenState extends State<VaultRecoverScreen> with _Busy {
           decoration: const InputDecoration(labelText: 'Recovery key', hintText: 'XXXX-XXXX-XXXX-…'),
         ),
         const SizedBox(height: 12),
-        _NewPassword(pw: _pw, confirm: _confirm, label: 'Mật khẩu vault mới'),
+        _NewPassword(pw: _pw, confirm: _confirm, label: 'New vault password'),
         errorText(context),
         const SizedBox(height: 20),
-        _submit(busy, 'Khôi phục', _go),
+        _submit(busy, 'Recover', _go),
       ],
     );
   }
@@ -403,18 +403,18 @@ class _VaultResetScreenState extends State<VaultResetScreen> with _Busy {
   Widget build(BuildContext context) {
     final c = context.colors;
     return _VaultForm(
-      title: 'Reset đồng bộ',
+      title: 'Reset sync',
       intro:
-          'Toàn bộ dữ liệu đồng bộ trên máy chủ sẽ bị xoá, rồi được tạo lại từ dữ liệu trên máy này với mật khẩu vault mới. '
-          'Các thiết bị khác phải mở khoá lại bằng mật khẩu mới; dữ liệu chỉ có trên các thiết bị đó sẽ không được gộp vào.',
+          'All synced data on the server will be deleted, then recreated from the data on this device with a new vault password. '
+          'Your other devices must unlock again with the new password; data that exists only on those devices will not be merged in.',
       children: [
-        _NewPassword(pw: _pw, confirm: _confirm, label: 'Mật khẩu vault mới'),
+        _NewPassword(pw: _pw, confirm: _confirm, label: 'New vault password'),
         CheckboxListTile(
           value: _understood,
           onChanged: (v) => setState(() => _understood = v ?? false),
           controlAffinity: ListTileControlAffinity.leading,
           contentPadding: EdgeInsets.zero,
-          title: const Text('Tôi hiểu dữ liệu đồng bộ cũ sẽ bị xoá'),
+          title: const Text('I understand the old synced data will be deleted'),
         ),
         errorText(context),
         const SizedBox(height: 12),
@@ -425,7 +425,7 @@ class _VaultResetScreenState extends State<VaultResetScreen> with _Busy {
             onPressed: busy || !_understood ? null : _reset,
             child: busy
                 ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4))
-                : const Text('Xoá & tạo lại', style: TextStyle(fontSize: 16)),
+                : const Text('Delete & recreate', style: TextStyle(fontSize: 16)),
           ),
         ),
       ],
@@ -461,7 +461,7 @@ class _VaultPasswordScreenState extends State<VaultPasswordScreen> with _Busy {
     run(() async {
       await widget.app.sync.changePassword(_current.text, _pw.text);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã đổi mật khẩu vault')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vault password changed')));
       Navigator.pop(context);
     });
   }
@@ -469,21 +469,21 @@ class _VaultPasswordScreenState extends State<VaultPasswordScreen> with _Busy {
   @override
   Widget build(BuildContext context) {
     return _VaultForm(
-      title: 'Đổi mật khẩu vault',
+      title: 'Change vault password',
       intro:
-          'Thiết bị đang đồng bộ không bị ảnh hưởng. Thiết bị mới sẽ cần mật khẩu mới. Recovery key cũ vẫn dùng được.',
+          'Devices that are already syncing are not affected. New devices will need the new password. Your existing recovery key still works.',
       children: [
         TextField(
           controller: _current,
           obscureText: true,
           autocorrect: false,
-          decoration: const InputDecoration(labelText: 'Mật khẩu vault hiện tại'),
+          decoration: const InputDecoration(labelText: 'Current vault password'),
         ),
         const SizedBox(height: 12),
-        _NewPassword(pw: _pw, confirm: _confirm, label: 'Mật khẩu vault mới'),
+        _NewPassword(pw: _pw, confirm: _confirm, label: 'New vault password'),
         errorText(context),
         const SizedBox(height: 20),
-        _submit(busy, 'Lưu', _save),
+        _submit(busy, 'Save', _save),
       ],
     );
   }

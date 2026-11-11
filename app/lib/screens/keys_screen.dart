@@ -18,11 +18,11 @@ class KeysScreen extends StatelessWidget {
     final c = context.colors;
     return Scaffold(
       appBar: AppBar(
-        title: Text(pick ? 'Chọn private key' : 'Private keys'),
+        title: Text(pick ? 'Choose private key' : 'Private keys'),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.add),
-            tooltip: 'Thêm key',
+            tooltip: 'Add key',
             onSelected: (v) async {
               final key = v == 'gen' ? await generateKeyFlow(context, store) : await importKeyFlow(context, store);
               if (key != null && pick && context.mounted) Navigator.pop(context, key);
@@ -30,11 +30,11 @@ class KeysScreen extends StatelessWidget {
             itemBuilder: (_) => const [
               PopupMenuItem(
                 value: 'import',
-                child: ListTile(leading: Icon(Icons.content_paste), title: Text('Nhập key có sẵn')),
+                child: ListTile(leading: Icon(Icons.content_paste), title: Text('Import existing key')),
               ),
               PopupMenuItem(
                 value: 'gen',
-                child: ListTile(leading: Icon(Icons.auto_fix_high), title: Text('Tạo key ED25519 mới')),
+                child: ListTile(leading: Icon(Icons.auto_fix_high), title: Text('Generate new ED25519 key')),
               ),
             ],
           ),
@@ -47,11 +47,11 @@ class KeysScreen extends StatelessWidget {
           if (keys.isEmpty) {
             return EmptyState(
               icon: Icons.key_rounded,
-              text: 'Chưa có private key nào.\nNhập key có sẵn hoặc tạo key mới, sau đó chọn key khi thêm host.',
+              text: 'No private keys yet.\nImport an existing key or generate a new one, then choose it when adding a host.',
               action: Wrap(spacing: 10, runSpacing: 10, alignment: WrapAlignment.center, children: [
                 OutlinedButton.icon(
                   icon: const Icon(Icons.content_paste),
-                  label: const Text('Nhập key'),
+                  label: const Text('Import key'),
                   onPressed: () async {
                     final k = await importKeyFlow(context, store);
                     if (k != null && pick && context.mounted) Navigator.pop(context, k);
@@ -59,7 +59,7 @@ class KeysScreen extends StatelessWidget {
                 ),
                 FilledButton.icon(
                   icon: const Icon(Icons.auto_fix_high),
-                  label: const Text('Tạo key mới'),
+                  label: const Text('Generate key'),
                   onPressed: () async {
                     final k = await generateKeyFlow(context, store);
                     if (k != null && pick && context.mounted) Navigator.pop(context, k);
@@ -94,8 +94,8 @@ class KeysScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
                   child: Text(
-                    'Private key được lưu mã hoá trong Keychain (iOS) / Keystore (Android). '
-                    'Một key có thể dùng cho nhiều host.',
+                    'Private keys are stored encrypted in the Keychain (iOS) / Keystore (Android). '
+                    'One key can be used for multiple hosts.',
                     style: TextStyle(color: c.textDim, fontSize: 13),
                   ),
                 ),
@@ -106,7 +106,7 @@ class KeysScreen extends StatelessWidget {
     );
   }
 
-  static String _usage(int n) => n == 0 ? 'chưa dùng' : 'dùng bởi $n host';
+  static String _usage(int n) => n == 0 ? 'unused' : 'used by $n ${n == 1 ? 'host' : 'hosts'}';
 }
 
 /// Paste an existing key. Returns the saved key, or null if cancelled.
@@ -117,11 +117,11 @@ Future<SshKey?> importKeyFlow(BuildContext context, HostStore store) =>
 Future<SshKey?> generateKeyFlow(BuildContext context, HostStore store) async {
   final label = await showTextInputDialog(
     context,
-    title: 'Tạo key ED25519 mới',
-    confirmText: 'Tạo',
+    title: 'Generate new ED25519 key',
+    confirmText: 'Generate',
     initialText: 'mytermi',
-    labelText: 'Tên key',
-    hintText: 'VD: iphone-cua-toi',
+    labelText: 'Key name',
+    hintText: 'e.g. my-iphone',
   );
   if (label == null) return null;
   final pem = generateEd25519Pem(label.trim());
@@ -184,8 +184,8 @@ class _KeyImportScreenState extends State<KeyImportScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nhập private key'),
-        actions: [TextButton(onPressed: _saving ? null : _save, child: const Text('Lưu'))],
+        title: const Text('Import private key'),
+        actions: [TextButton(onPressed: _saving ? null : _save, child: const Text('Save'))],
       ),
       body: Form(
         key: _form,
@@ -194,7 +194,7 @@ class _KeyImportScreenState extends State<KeyImportScreen> {
           children: [
             TextFormField(
               controller: _label,
-              decoration: const InputDecoration(labelText: 'Tên key', hintText: 'VD: macbook, aws-prod'),
+              decoration: const InputDecoration(labelText: 'Key name', hintText: 'e.g. macbook, aws-prod'),
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -208,7 +208,7 @@ class _KeyImportScreenState extends State<KeyImportScreen> {
                 hintText: '-----BEGIN OPENSSH PRIVATE KEY-----',
                 alignLabelWithHint: true,
                 suffixIcon: IconButton(
-                  tooltip: 'Dán từ clipboard',
+                  tooltip: 'Paste from clipboard',
                   icon: const Icon(Icons.content_paste),
                   onPressed: _paste,
                 ),
@@ -220,7 +220,7 @@ class _KeyImportScreenState extends State<KeyImportScreen> {
               controller: _passphrase,
               obscureText: _obscure,
               decoration: InputDecoration(
-                labelText: 'Passphrase (nếu có)',
+                labelText: 'Passphrase (if any)',
                 suffixIcon: IconButton(
                   icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
                   onPressed: () => setState(() => _obscure = !_obscure),
@@ -229,8 +229,8 @@ class _KeyImportScreenState extends State<KeyImportScreen> {
             ),
             const SizedBox(height: 20),
             Text(
-              'Hỗ trợ ED25519, RSA, ECDSA (định dạng OpenSSH hoặc PEM). '
-              'Key được lưu mã hoá trong Keychain / Keystore.',
+              'Supports ED25519, RSA and ECDSA (OpenSSH or PEM format). '
+              'Keys are stored encrypted in the Keychain / Keystore.',
               style: TextStyle(color: context.colors.textDim, fontSize: 13),
             ),
           ],
@@ -276,17 +276,17 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Xoá key "${key.label}"?'),
+        title: Text('Delete key "${key.label}"?'),
         content: Text(used.isEmpty
-            ? 'Key sẽ bị xoá khỏi máy này.'
-            : 'Các host sau đang dùng key này và sẽ cần chọn key khác:\n'
+            ? 'The key will be removed from this device.'
+            : 'These hosts use this key and will need a different one:\n'
                 '${used.map((h) => '• ${h.displayName}').join('\n')}'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: ctx.colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Xoá'),
+            child: const Text('Delete'),
           ),
         ],
       ),
@@ -319,23 +319,23 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(color: c.greenBg, borderRadius: BorderRadius.circular(14)),
                   child: Text(
-                    'Đã tạo key. Thêm public key bên dưới vào ~/.ssh/authorized_keys trên server '
-                    '(hoặc dán "lệnh cài" vào một session đang đăng nhập bằng password), '
-                    'rồi chọn key này cho host.',
+                    'Key generated. Add the public key below to ~/.ssh/authorized_keys on the server '
+                    '(or paste the "install command" into a session logged in with a password), '
+                    'then choose this key for the host.',
                     style: TextStyle(color: c.text, height: 1.4),
                   ),
                 ),
               TextField(
                 controller: _label,
-                decoration: const InputDecoration(labelText: 'Tên key'),
+                decoration: const InputDecoration(labelText: 'Key name'),
                 onSubmitted: (v) => widget.store.renameKey(key, v),
                 onTapOutside: (_) {
                   FocusScope.of(context).unfocus();
                   if (_label.text.trim() != key.label) widget.store.renameKey(key, _label.text);
                 },
               ),
-              const SectionLabel('Thông tin'),
-              _InfoRow(label: 'Loại', value: key.typeLabel),
+              const SectionLabel('Details'),
+              _InfoRow(label: 'Type', value: key.typeLabel),
               _InfoRow(label: 'Fingerprint', value: key.fingerprint, mono: true),
               const SectionLabel('Public key'),
               Container(
@@ -349,23 +349,23 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
                   child: FilledButton.icon(
                     icon: const Icon(Icons.copy, size: 18),
                     label: const Text('Public key'),
-                    onPressed: () => _copy(key.publicKey, 'Đã sao chép public key'),
+                    onPressed: () => _copy(key.publicKey, 'Public key copied'),
                   ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.terminal, size: 18),
-                    label: const Text('Lệnh cài'),
-                    onPressed: () => _copy(installCmd, 'Đã sao chép lệnh thêm vào authorized_keys'),
+                    label: const Text('Install command'),
+                    onPressed: () => _copy(installCmd, 'Copied command that adds the key to authorized_keys'),
                   ),
                 ),
               ]),
-              const SectionLabel('Host đang dùng'),
+              const SectionLabel('Used by hosts'),
               if (used.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Text('Chưa có host nào dùng key này.', style: TextStyle(color: c.textDim)),
+                  child: Text('No hosts use this key yet.', style: TextStyle(color: c.textDim)),
                 )
               else
                 for (final h in used)
@@ -382,7 +382,7 @@ class _KeyDetailScreenState extends State<KeyDetailScreen> {
                   side: BorderSide(color: c.red.withValues(alpha: 0.5)),
                 ),
                 icon: const Icon(Icons.delete_outline),
-                label: const Text('Xoá key'),
+                label: const Text('Delete key'),
                 onPressed: () => _delete(key),
               ),
             ],

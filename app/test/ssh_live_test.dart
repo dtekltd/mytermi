@@ -36,7 +36,7 @@ void main() {
     final out = StringBuffer();
     session.stdout.cast<List<int>>().transform(const Utf8Decoder(allowMalformed: true)).listen(out.write);
     session.resizeTerminal(120, 40);
-    session.write(Uint8List.fromList(utf8.encode('echo "TERM=\$TERM COLS=\$(tput cols)"; echo xin chào\n')));
+    session.write(Uint8List.fromList(utf8.encode('echo "TERM=\$TERM COLS=\$(tput cols)"; echo grüße señor\n')));
     for (var i = 0; i < 50 && !out.toString().contains('COLS=120'); i++) {
       await Future.delayed(const Duration(milliseconds: 100));
     }
@@ -44,7 +44,7 @@ void main() {
     await session.done.timeout(const Duration(seconds: 5));
     client.close();
     expect(out.toString(), contains('TERM=xterm-256color COLS=120'));
-    expect(out.toString(), contains('xin chào'));
+    expect(out.toString(), contains('grüße señor'));
   }, skip: dir == null ? 'set SSH_TEST_DIR to run' : false);
 
   test('wrong passphrase is rejected', () {

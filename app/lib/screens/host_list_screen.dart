@@ -46,11 +46,11 @@ class _HostListScreenState extends State<HostListScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        title: const Text('Xoá host?'),
-        content: Text('Xoá "${host.displayName}", thông tin đăng nhập và lịch sử lệnh đã lưu.'),
+        title: const Text('Delete host?'),
+        content: Text('Delete "${host.displayName}" along with its saved credentials and command history.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Huỷ')),
-          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Xoá')),
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(c, true), child: const Text('Delete')),
         ],
       ),
     );
@@ -82,7 +82,7 @@ class _HostListScreenState extends State<HostListScreen> {
               child: PageHeader(
                 title: 'Hosts',
                 subtitle: 'MyTermi',
-                actions: [CircleButton(icon: Icons.add, tooltip: 'Thêm host', onPressed: _edit)],
+                actions: [CircleButton(icon: Icons.add, tooltip: 'Add host', onPressed: _edit)],
               ),
             ),
             SliverToBoxAdapter(
@@ -97,8 +97,8 @@ class _HostListScreenState extends State<HostListScreen> {
                 hasScrollBody: false,
                 child: EmptyState(
                   icon: Icons.dns_outlined,
-                  text: 'Chưa có host nào.\nThêm server SSH đầu tiên của bạn.',
-                  action: FilledButton.icon(onPressed: _edit, icon: const Icon(Icons.add), label: const Text('Thêm host')),
+                  text: 'No hosts yet.\nAdd your first SSH server.',
+                  action: FilledButton.icon(onPressed: _edit, icon: const Icon(Icons.add), label: const Text('Add host')),
                 ),
               )
             else
@@ -134,11 +134,11 @@ class _HostListScreenState extends State<HostListScreen> {
           }
         },
         itemBuilder: (_) => [
-          const PopupMenuItem(value: 'new', child: ListTile(leading: Icon(Icons.add), title: Text('Session mới'))),
-          const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit), title: Text('Sửa'))),
+          const PopupMenuItem(value: 'new', child: ListTile(leading: Icon(Icons.add), title: Text('New session'))),
+          const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit), title: Text('Edit'))),
           PopupMenuItem(
             value: 'delete',
-            child: ListTile(leading: Icon(Icons.delete_outline, color: c.red), title: const Text('Xoá')),
+            child: ListTile(leading: Icon(Icons.delete_outline, color: c.red), title: const Text('Delete')),
           ),
         ],
       ),

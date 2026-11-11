@@ -14,7 +14,7 @@ void main() {
       home: Builder(
         builder: (context) => TextButton(
           onPressed: () async => result =
-              await showTextInputDialog(context, title: 'Password', confirmText: 'Kết nối', obscure: true),
+              await showTextInputDialog(context, title: 'Password', confirmText: 'Connect', obscure: true),
           child: const Text('open'),
         ),
       ),
@@ -39,7 +39,7 @@ void main() {
   testWidgets('submit with button', variant: TargetPlatformVariant.only(TargetPlatform.iOS), (t) async {
     expect(await run(t, (t) async {
       await t.enterText(find.byType(TextField), 'hunter2');
-      await t.tap(find.text('Kết nối'));
+      await t.tap(find.text('Connect'));
     }), 'hunter2');
   });
 
@@ -51,6 +51,6 @@ void main() {
   });
 
   testWidgets('cancel returns null', variant: TargetPlatformVariant.mobile(), (t) async {
-    expect(await run(t, (t) async => t.tap(find.text('Huỷ'))), isNull);
+    expect(await run(t, (t) async => t.tap(find.text('Cancel'))), isNull);
   });
 }

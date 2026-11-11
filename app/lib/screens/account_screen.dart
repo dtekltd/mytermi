@@ -10,19 +10,19 @@ import '../widgets/settings_tiles.dart';
 import 'login_screen.dart';
 import 'vault_screens.dart';
 
-String _friendly(Object e) => e is ApiException ? e.friendly : 'Có lỗi xảy ra: $e';
+String _friendly(Object e) => e is ApiException ? e.friendly : 'Something went wrong: $e';
 
 String syncSummary(SyncService s) {
   return switch (s.phase) {
-    SyncPhase.off => 'Chưa đăng nhập',
-    SyncPhase.needsVault => 'Chưa bật đồng bộ',
-    SyncPhase.locked => 'Đồng bộ đang khoá trên máy này',
-    SyncPhase.ready when s.syncing => 'Đang đồng bộ…',
+    SyncPhase.off => 'Not signed in',
+    SyncPhase.needsVault => 'Sync is off',
+    SyncPhase.locked => 'Sync is locked on this device',
+    SyncPhase.ready when s.syncing => 'Syncing…',
     SyncPhase.ready when s.error != null => s.error!,
     SyncPhase.ready =>
       s.lastSynced == null
-          ? 'Đã bật đồng bộ'
-          : 'Đã đồng bộ lúc ${TimeOfDay.fromDateTime(s.lastSynced!).format24()} · ${s.syncedItems} mục',
+          ? 'Sync is on'
+          : 'Last synced ${TimeOfDay.fromDateTime(s.lastSynced!).format24()} · ${s.syncedItems} items',
   };
 }
 
@@ -44,7 +44,7 @@ class AccountScreen extends StatelessWidget {
         if (a == null) return LoginScreen(app: app);
         final c = context.colors;
         return Scaffold(
-          appBar: AppBar(title: const Text('Tài khoản')),
+          appBar: AppBar(title: const Text('Account')),
           body: RefreshIndicator(
             onRefresh: () async {
               try {
@@ -87,15 +87,15 @@ class AccountScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SectionLabel('Đồng bộ'),
+                const SectionLabel('Sync'),
                 _SyncCard(app: app),
-                const SectionLabel('Đăng nhập & bảo mật'),
+                const SectionLabel('Sign-in & security'),
                 SettingsGroup(
                   children: [
                     SettingsTile(
                       icon: Icons.password,
-                      title: a.hasPassword ? 'Đổi mật khẩu đăng nhập' : 'Đặt mật khẩu đăng nhập',
-                      subtitle: a.hasPassword ? null : 'Để đăng nhập bằng email + mật khẩu',
+                      title: a.hasPassword ? 'Change password' : 'Set a password',
+                      subtitle: a.hasPassword ? null : 'Sign in with email and password',
                       trailing: Icon(Icons.chevron_right, color: c.textDim),
                       onTap: () => Navigator.push(
                         context,
@@ -109,15 +109,15 @@ class AccountScreen extends StatelessWidget {
                     ),
                     SettingsTile(
                       icon: Icons.devices,
-                      title: 'Thiết bị đã đăng nhập',
-                      subtitle: a.maxDevices > 0 ? 'Gói ${a.planName}: tối đa ${a.maxDevices} thiết bị' : null,
+                      title: 'Devices',
+                      subtitle: a.maxDevices > 0 ? '${a.planName} plan: up to ${a.maxDevices} devices' : null,
                       trailing: Icon(Icons.chevron_right, color: c.textDim),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => SessionsScreen(app: app))),
                     ),
                     if (a.providers.isNotEmpty)
                       SettingsTile(
                         icon: Icons.link,
-                        title: 'Tài khoản liên kết',
+                        title: 'Linked accounts',
                         subtitle: a.providers.map((p) => p == 'google' ? 'Google' : 'Apple').join(', '),
                       ),
                   ],
@@ -127,14 +127,14 @@ class AccountScreen extends StatelessWidget {
                   children: [
                     SettingsTile(
                       icon: Icons.logout,
-                      title: 'Đăng xuất',
-                      subtitle: 'Dữ liệu trên máy này được giữ nguyên',
+                      title: 'Sign out',
+                      subtitle: 'Data on this device is kept',
                       onTap: () => _signOut(context),
                     ),
                     SettingsTile(
                       icon: Icons.delete_forever_outlined,
-                      title: 'Xoá tài khoản',
-                      subtitle: 'Xoá tài khoản và toàn bộ dữ liệu đã đồng bộ trên máy chủ',
+                      title: 'Delete account',
+                      subtitle: 'Delete your account and all synced data on the server',
                       danger: true,
                       onTap: () => _delete(context),
                     ),
@@ -152,11 +152,11 @@ class AccountScreen extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Đăng xuất?'),
-        content: const Text('Đồng bộ sẽ dừng trên máy này. Host, key và snippet trên máy vẫn được giữ lại.'),
+        title: const Text('Sign out?'),
+        content: const Text('Sync will stop on this device. Hosts, keys and snippets on this device are kept.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Đăng xuất')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Sign out')),
         ],
       ),
     );
@@ -169,13 +169,13 @@ class AccountScreen extends StatelessWidget {
     final email = app.account.account!.email;
     final typed = await showTextInputDialog(
       context,
-      title: 'Xoá tài khoản vĩnh viễn?',
-      confirmText: 'Xoá',
-      labelText: 'Nhập $email để xác nhận',
+      title: 'Delete account permanently?',
+      confirmText: 'Delete',
+      labelText: 'Type $email to confirm',
     );
     if (typed == null || !context.mounted) return;
     if (typed.trim().toLowerCase() != email) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email không khớp, chưa xoá gì.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email doesn\'t match. Nothing was deleted.')));
       return;
     }
     try {
@@ -183,7 +183,7 @@ class AccountScreen extends StatelessWidget {
       if (!context.mounted) return;
       Navigator.of(context).popUntil((r) => r.isFirst);
       ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Đã xoá tài khoản. Dữ liệu trên máy này vẫn còn.')));
+          .showSnackBar(const SnackBar(content: Text('Account deleted. Data on this device is kept.')));
     } catch (e) {
       if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_friendly(e))));
     }
@@ -205,48 +205,48 @@ class _SyncCard extends StatelessWidget {
       _ when !a.syncEnabled => (
         Icons.cloud_off,
         c.textDim,
-        'Gói hiện tại không có đồng bộ',
-        'Liên hệ quản trị viên để nâng cấp gói.',
+        'Your plan doesn\'t include sync',
+        'Contact your administrator to upgrade your plan.',
         <Widget>[],
       ),
       SyncPhase.needsVault => (
         Icons.cloud_upload_outlined,
         c.blue,
-        'Bật đồng bộ',
-        'Đặt mật khẩu vault để mã hoá dữ liệu trước khi gửi lên máy chủ. Chỉ bạn mở khoá được.',
+        'Turn on sync',
+        'Set a vault password to encrypt your data before it is sent to the server. Only you can unlock it.',
         [
           FilledButton(
             onPressed: () => go(VaultSetupScreen(app: app)),
-            child: const Text('Bật đồng bộ'),
+            child: const Text('Turn on sync'),
           ),
         ],
       ),
       SyncPhase.locked => (
         Icons.lock_outline,
         c.amber,
-        'Mở khoá đồng bộ',
-        'Tài khoản đã có dữ liệu đồng bộ. Nhập mật khẩu vault để mở khoá trên máy này.',
+        'Unlock sync',
+        'This account already has synced data. Enter your vault password to unlock it on this device.',
         [
           FilledButton(
             onPressed: () => go(VaultUnlockScreen(app: app)),
-            child: const Text('Mở khoá'),
+            child: const Text('Unlock'),
           ),
         ],
       ),
       SyncPhase.ready => (
         s.error != null ? Icons.sync_problem : Icons.cloud_done_outlined,
         s.error != null ? c.red : c.green,
-        s.syncing ? 'Đang đồng bộ…' : (s.error != null ? 'Lỗi đồng bộ' : 'Đồng bộ đang bật'),
+        s.syncing ? 'Syncing…' : (s.error != null ? 'Sync error' : 'Sync is on'),
         s.error ?? syncSummary(s),
         [
-          FilledButton.tonal(onPressed: s.syncing ? null : () => s.syncNow(), child: const Text('Đồng bộ ngay')),
+          FilledButton.tonal(onPressed: s.syncing ? null : () => s.syncNow(), child: const Text('Sync now')),
           TextButton(
             onPressed: () => go(VaultPasswordScreen(app: app)),
-            child: const Text('Đổi mật khẩu vault'),
+            child: const Text('Change vault password'),
           ),
         ],
       ),
-      SyncPhase.off => (Icons.cloud_off, c.textDim, 'Chưa đăng nhập', '', <Widget>[]),
+      SyncPhase.off => (Icons.cloud_off, c.textDim, 'Not signed in', '', <Widget>[]),
     };
 
     return Container(
@@ -274,7 +274,7 @@ class _SyncCard extends StatelessWidget {
           ],
           if (s.phase == SyncPhase.ready && s.pendingChanges > 0 && !s.syncing) ...[
             const SizedBox(height: 4),
-            Text('${s.pendingChanges} thay đổi chờ gửi', style: TextStyle(color: c.amber, fontSize: 13)),
+            Text('${s.pendingChanges} changes waiting to sync', style: TextStyle(color: c.amber, fontSize: 13)),
           ],
           if (actions.isNotEmpty) ...[const SizedBox(height: 12), Wrap(spacing: 8, runSpacing: 8, children: actions)],
           const SizedBox(height: 10),
@@ -284,7 +284,7 @@ class _SyncCard extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Host, private key, password SSH và snippet được mã hoá đầu-cuối.',
+                  'Hosts, private keys, SSH passwords and snippets are end-to-end encrypted.',
                   style: TextStyle(color: c.textDim, fontSize: 12.5),
                 ),
               ),
@@ -328,7 +328,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
   Widget build(BuildContext context) {
     final c = context.colors;
     return Scaffold(
-      appBar: AppBar(title: const Text('Thiết bị đã đăng nhập')),
+      appBar: AppBar(title: const Text('Devices')),
       body: _list == null
           ? Center(child: _error != null ? Text(_error!) : const CircularProgressIndicator())
           : ListView(
@@ -338,12 +338,12 @@ class _SessionsScreenState extends State<SessionsScreen> {
                   ItemCard(
                     icon: s['platform'] == 'android' ? Icons.phone_android : Icons.phone_iphone,
                     iconColor: s['current'] == true ? c.green : c.blue,
-                    title: '${s['device_name'] ?? 'Thiết bị'}${s['current'] == true ? ' (máy này)' : ''}',
-                    subtitle: 'Hoạt động ${_ago(s['last_used_at'] as String)} · ${s['ip']}',
+                    title: '${s['device_name'] ?? 'Device'}${s['current'] == true ? ' (this device)' : ''}',
+                    subtitle: 'Active ${_ago(s['last_used_at'] as String)} · ${s['ip']}',
                     trailing: s['current'] == true
                         ? null
                         : IconButton(
-                            tooltip: 'Đăng xuất thiết bị',
+                            tooltip: 'Sign out device',
                             icon: Icon(Icons.logout, color: c.red),
                             onPressed: () async {
                               await widget.app.account.revokeSession(s['id'] as String);
@@ -358,16 +358,16 @@ class _SessionsScreenState extends State<SessionsScreen> {
 
   static String _ago(String iso) {
     final d = DateTime.now().difference(DateTime.parse(iso));
-    if (d.inMinutes < 1) return 'vừa xong';
-    if (d.inHours < 1) return '${d.inMinutes} phút trước';
-    if (d.inDays < 1) return '${d.inHours} giờ trước';
-    return '${d.inDays} ngày trước';
+    if (d.inMinutes < 1) return 'just now';
+    if (d.inHours < 1) return '${d.inMinutes} min ago';
+    if (d.inDays < 1) return '${d.inHours} h ago';
+    return '${d.inDays} d ago';
   }
 }
 
-/// "Gói Pro" or "Gói Pro · đến 26/12/2026".
+/// "Pro plan" or "Pro plan · expires 26/12/2026".
 String planLabel(Account a) {
   final e = a.planExpiresAt;
-  if (e == null) return 'Gói ${a.planName}';
-  return 'Gói ${a.planName} · đến ${e.day.toString().padLeft(2, '0')}/${e.month.toString().padLeft(2, '0')}/${e.year}';
+  if (e == null) return '${a.planName} plan';
+  return '${a.planName} plan · expires ${e.day.toString().padLeft(2, '0')}/${e.month.toString().padLeft(2, '0')}/${e.year}';
 }

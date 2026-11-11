@@ -196,7 +196,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
     if (sel == null) return;
     Clipboard.setData(ClipboardData(text: s.terminal.buffer.getText(sel)));
     s.controller.clearSelection();
-    _snack('Đã copy');
+    _snack('Copied');
   }
 
   void _snack(String msg) =>
@@ -212,7 +212,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
           children: [
             const Padding(
               padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Text('Mở session mới', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+              child: Text('New session', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
             ),
             for (final h in widget.hosts.hosts)
               ItemCard(
@@ -235,11 +235,11 @@ class _TerminalScreenState extends State<TerminalScreen> {
       final ok = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Đóng session?'),
-          content: Text('Ngắt kết nối tới ${s.host.address}.'),
+          title: const Text('Close session?'),
+          content: Text('Disconnect from ${s.host.address}.'),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Đóng')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Close')),
           ],
         ),
       );
@@ -255,15 +255,15 @@ class _TerminalScreenState extends State<TerminalScreen> {
       (Icons.bolt, 'Snippets', () => _showSnippets(s)),
       (Icons.content_paste, 'Paste', () => _paste(s)),
       if (hasSel) (Icons.copy, 'Copy', () => _copy(s)),
-      (Icons.text_increase, 'Chữ to', () => _settings.fontSize += 1),
-      (Icons.text_decrease, 'Chữ nhỏ', () => _settings.fontSize -= 1),
-      if (s.isConnected) (Icons.download, 'Nhập lịch sử', () => _importHistory(s)),
-      (Icons.history_toggle_off, 'Xoá lịch sử', () => _clearHistory(s)),
+      (Icons.text_increase, 'Larger text', () => _settings.fontSize += 1),
+      (Icons.text_decrease, 'Smaller text', () => _settings.fontSize -= 1),
+      if (s.isConnected) (Icons.download, 'Import history', () => _importHistory(s)),
+      (Icons.history_toggle_off, 'Clear history', () => _clearHistory(s)),
       if (s.isConnected)
-        (Icons.link_off, 'Ngắt kết nối', s.disconnect)
+        (Icons.link_off, 'Disconnect', s.disconnect)
       else
-        (Icons.refresh, 'Kết nối lại', s.connect),
-      (Icons.close, 'Đóng session', () => _closeSession(s)),
+        (Icons.refresh, 'Reconnect', s.connect),
+      (Icons.close, 'Close session', () => _closeSession(s)),
     ];
     final picked = await showModalBottomSheet<VoidCallback>(
       context: context,
@@ -302,9 +302,9 @@ class _TerminalScreenState extends State<TerminalScreen> {
   Future<void> _importHistory(SshSession s) async {
     try {
       final n = await s.importHistory();
-      _snack(n == 0 ? 'Không tìm thấy lịch sử shell trên server' : 'Đã nhập $n lệnh từ server');
+      _snack(n == 0 ? 'No shell history found on the server' : 'Imported $n commands from the server');
     } catch (e) {
-      _snack('Không nhập được: $e');
+      _snack('Import failed: $e');
     }
   }
 
@@ -312,11 +312,11 @@ class _TerminalScreenState extends State<TerminalScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Xoá lịch sử lệnh?'),
-        content: Text('Xoá ${widget.commands.historyCount(s.host.id)} lệnh đã lưu cho ${s.host.displayName}.'),
+        title: const Text('Clear command history?'),
+        content: Text('Delete ${widget.commands.historyCount(s.host.id)} saved commands for ${s.host.displayName}.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Huỷ')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Xoá')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Clear')),
         ],
       ),
     );
@@ -342,25 +342,25 @@ class _TerminalScreenState extends State<TerminalScreen> {
             ),
             ListTile(
                 leading: const Icon(Icons.play_arrow),
-                title: const Text('Chạy ngay'),
+                title: const Text('Run now'),
                 onTap: () => Navigator.pop(ctx, 'run')),
             ListTile(
                 leading: const Icon(Icons.edit_note),
-                title: const Text('Chèn vào dòng lệnh (chưa chạy)'),
+                title: const Text('Insert into command line (don\'t run)'),
                 onTap: () => Navigator.pop(ctx, 'insert')),
             if (sg.isSnippet)
               ListTile(
                   leading: const Icon(Icons.edit),
-                  title: const Text('Sửa snippet'),
+                  title: const Text('Edit snippet'),
                   onTap: () => Navigator.pop(ctx, 'edit'))
             else ...[
               ListTile(
                   leading: const Icon(Icons.bolt),
-                  title: const Text('Lưu thành snippet'),
+                  title: const Text('Save as snippet'),
                   onTap: () => Navigator.pop(ctx, 'save')),
               ListTile(
                   leading: const Icon(Icons.delete_outline),
-                  title: const Text('Xoá khỏi lịch sử'),
+                  title: const Text('Remove from history'),
                   onTap: () => Navigator.pop(ctx, 'delete')),
             ],
           ],
@@ -400,7 +400,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 if (list.isEmpty)
                   Padding(
                     padding: const EdgeInsets.all(24),
-                    child: Text('Chưa có snippet nào.', style: TextStyle(color: c.textDim)),
+                    child: Text('No snippets yet.', style: TextStyle(color: c.textDim)),
                   ),
                 Flexible(
                   child: ListView(shrinkWrap: true, children: [
@@ -416,7 +416,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 ),
                 ListTile(
                   leading: const Icon(Icons.settings),
-                  title: const Text('Quản lý snippet'),
+                  title: const Text('Manage snippets'),
                   onTap: () => Navigator.of(ctx).push(MaterialPageRoute(
                     builder: (_) => SnippetsScreen(store: widget.commands, standalone: true),
                   )),
@@ -443,33 +443,33 @@ class _TerminalScreenState extends State<TerminalScreen> {
       builder: (ctx) => AlertDialog(
         icon: Icon(changed ? Icons.warning_amber : Icons.verified_user,
             color: changed ? c.red : c.green),
-        title: Text(changed ? 'HOST KEY ĐÃ THAY ĐỔI!' : 'Server mới'),
+        title: Text(changed ? 'HOST KEY HAS CHANGED!' : 'New server'),
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(changed
-                  ? 'Fingerprint khác với lần trước. Có thể server đã cài lại, '
-                      'hoặc ai đó đang nghe lén kết nối (MITM). Chỉ tiếp tục nếu bạn chắc chắn.'
-                  : 'Lần đầu kết nối tới server này. Kiểm tra fingerprint trước khi tin tưởng:'),
+                  ? 'The fingerprint differs from last time. The server may have been reinstalled, '
+                      'or someone may be intercepting the connection (MITM). Only continue if you are sure.'
+                  : 'First connection to this server. Verify the fingerprint before trusting it:'),
               const SizedBox(height: 12),
               Text(type, style: TextStyle(color: c.textDim, fontSize: 12)),
               SelectableText(fp, style: const TextStyle(fontFamily: monoFont, fontSize: 12)),
               const SizedBox(height: 12),
               Text(
-                'So sánh với kết quả trên server:\nssh-keygen -l -f /etc/ssh/ssh_host_ed25519_key.pub',
+                'Compare with the output on the server:\nssh-keygen -l -f /etc/ssh/ssh_host_ed25519_key.pub',
                 style: TextStyle(color: c.textDim, fontSize: 12),
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Từ chối')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Reject')),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: changed ? FilledButton.styleFrom(backgroundColor: c.red) : null,
-            child: Text(changed ? 'Vẫn tin tưởng' : 'Tin tưởng'),
+            child: Text(changed ? 'Trust anyway' : 'Trust'),
           ),
         ],
       ),
@@ -482,7 +482,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
     return showTextInputDialog(
       context,
       title: 'Password cho ${host.address}',
-      confirmText: 'Kết nối',
+      confirmText: 'Connect',
       obscure: true,
     );
   }
@@ -572,7 +572,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
                         child: FilledButton.icon(
                           onPressed: s.connect,
                           icon: const Icon(Icons.refresh),
-                          label: const Text('Kết nối lại'),
+                          label: const Text('Reconnect'),
                         ),
                       ),
                     ),
@@ -637,7 +637,7 @@ class _SelectionToolbar extends StatelessWidget {
               elevation: 6,
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 TextButton.icon(onPressed: onCopy, icon: const Icon(Icons.copy, size: 18), label: const Text('Copy')),
-                TextButton(onPressed: session.controller.clearSelection, child: const Text('Huỷ')),
+                TextButton(onPressed: session.controller.clearSelection, child: const Text('Cancel')),
               ]),
             ),
           ),
@@ -673,7 +673,7 @@ class _SessionBar extends StatelessWidget {
         child: Row(children: [
           SquareButton(
             size: 50,
-            tooltip: 'Về danh sách host',
+            tooltip: 'Back to hosts',
             onPressed: onBack,
             child: Icon(Icons.chevron_left, color: c.green, size: 30),
           ),
@@ -691,7 +691,7 @@ class _SessionBar extends StatelessWidget {
           const SizedBox(width: 8),
           SquareButton(
             size: 50,
-            tooltip: 'Session mới',
+            tooltip: 'New session',
             onPressed: onNew,
             child: Icon(Icons.add, color: c.green, size: 28),
           ),
@@ -737,7 +737,7 @@ class _SessionBar extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: 'Đóng session',
+                tooltip: 'Close session',
                 onPressed: () => onClose(s),
                 icon: Icon(Icons.cancel_outlined, color: active ? c.green : c.textDim),
               ),
