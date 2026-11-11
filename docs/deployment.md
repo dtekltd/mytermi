@@ -13,11 +13,15 @@ MYTERMI_PUBLIC_URL=https://sync.example.com
 MYTERMI_ADMIN_EMAIL=you@example.com
 MYTERMI_ADMIN_PASSWORD=<strong password>
 MYTERMI_DEV=0
+MYTERMI_BIND=127.0.0.1
+MYTERMI_TRUST_PROXY=1
 EOF
 docker compose up -d --build
 ```
 
-Then open `http://<host>:8080/console`, sign in as the admin, and configure SMTP (see below).
+`MYTERMI_BIND=127.0.0.1` keeps port 8080 private to the machine (Docker publishes ports past
+`ufw`), so put a reverse proxy with TLS in front (see below). Then open
+`https://<your domain>/console`, sign in as the admin, and configure SMTP (see below).
 
 `MYTERMI_DEV=1`, the compose default, prints email codes to the server log instead of sending
 them. Use it only until SMTP works.
