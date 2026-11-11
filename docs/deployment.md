@@ -47,6 +47,7 @@ Migrations run automatically at startup. `mytermi migrate` runs them on their ow
 | `MYTERMI_JWT_SECRET` | generated | Signing key for access tokens and email codes. If empty, one is generated and stored in the database. |
 | `MYTERMI_TRUST_PROXY` | `0` | Set to `1` behind a reverse proxy so client IPs (rate limits, audit log) come from `X-Forwarded-For` |
 | `MYTERMI_DEV` | `0` | Log emails instead of failing when SMTP isn't configured |
+| `MYTERMI_BIND`, `MYTERMI_PORT`, `MYTERMI_DB_PORT` | `0.0.0.0`, `8080`, `5432` | docker-compose only: where the server and Postgres ports are published on the host. Change them if another service already uses 8080 or 5432. |
 | `MYTERMI_ADMIN_EMAIL`, `MYTERMI_ADMIN_PASSWORD` | | At startup, create this admin (or promote the account). The password is set only if the account has none. |
 
 Everything else is configured in **Console → Cấu hình**, stored in the database, and applied

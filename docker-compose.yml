@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mytermi}
       POSTGRES_DB: mytermi
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${MYTERMI_DB_PORT:-5432}:5432" # host port for psql / tests
     volumes:
       - pgdata:/var/lib/postgresql
       - ./server/scripts/create-test-db.sql:/docker-entrypoint-initdb.d/10-test-db.sql:ro
@@ -33,7 +33,7 @@ services:
       MYTERMI_TRUST_PROXY: ${MYTERMI_TRUST_PROXY:-0} # 1 behind a reverse proxy (Caddy/nginx)
     ports:
       # Production behind a reverse proxy: MYTERMI_BIND=127.0.0.1 (Docker bypasses ufw).
-      - "${MYTERMI_BIND:-0.0.0.0}:8080:8080"
+      - "${MYTERMI_BIND:-0.0.0.0}:${MYTERMI_PORT:-8080}:8080"
     restart: unless-stopped
 
 volumes:
