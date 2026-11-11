@@ -385,6 +385,9 @@ func cleanList(in []string) []string {
 func (s *Server) handleTestEmail(w http.ResponseWriter, r *http.Request, a *authCtx) error {
 	var req struct {
 		To string `json:"to"`
+		// SMTP, if given, is the console form as it is now (possibly unsaved), so
+		// the admin can test before saving. The masked password means "the stored one".
+		SMTP *mail.SMTPConfig `json:"smtp"`
 	}
 	if err := decode(r, &req); err != nil {
 		return err
@@ -398,9 +401,20 @@ func (s *Server) handleTestEmail(w http.ResponseWriter, r *http.Request, a *auth
 	if err != nil {
 		return err
 	}
+	if req.SMTP != nil {
+		if req.SMTP.Password == secretMask {
+			req.SMTP.Password = st.SMTP.Password
+		}
+		st.SMTP = *req.SMTP
+	}
 	sender, err := s.mailer(st)
 	if err != nil {
-		return errf(http.StatusBadRequest, "email_not_configured", "fill in the SMTP settings and save them first")
+		return errf(http.StatusBadRequest, "email_not_configured", "fill in the SMTP host and From address first")
+	}
+	if _, logged := sender.(mail.Log); logged {
+		// Dev mode without SMTP: nothing is sent, say so instead of "sent".
+		writeJSON(w, http.StatusOK, map[string]any{"sent": false, "logged": true, "to": to})
+		return nil
 	}
 	err = sender.Send(ctx, mail.Message{
 		To: to, Subject: st.General.AppName + ": email thử nghiệm",

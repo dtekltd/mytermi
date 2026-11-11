@@ -59,8 +59,15 @@ export default function SettingsPage() {
     setBusy("test");
     setMsg(null);
     try {
-      await api("/settings/test-email", { method: "POST", body: { to: testTo } });
-      setMsg({ tone: "green", text: `Đã gửi email thử tới ${testTo}.` });
+      const x = await api<{ sent: boolean; logged?: boolean }>("/settings/test-email", {
+        method: "POST",
+        body: { to: testTo, smtp: s.smtp },
+      });
+      setMsg(
+        x.logged
+          ? { tone: "red", text: "Chưa cấu hình SMTP (thiếu host hoặc From): server ở chế độ dev nên chỉ in email ra log, không gửi đi." }
+          : { tone: "green", text: `Đã gửi email thử tới ${testTo}. Nhớ bấm Lưu nếu chưa lưu cấu hình.` },
+      );
     } catch (e) {
       setMsg({ tone: "red", text: errorText(e) });
     } finally {

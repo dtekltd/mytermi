@@ -85,5 +85,5 @@ replaces that device's old session.
 | `POST /admin/users/{id}/revoke-sessions` | |
 | `GET /admin/plans`, `PUT /admin/plans/{id}`, `DELETE /admin/plans/{id}` | Errors: `plan_default`, `plan_in_use` |
 | `GET /admin/settings`, `PUT /admin/settings` | `{general, smtp, google, apple}`. The SMTP password is returned masked; sending the mask back keeps the stored value. |
-| `POST /admin/settings/test-email` `{to}` | |
+| `POST /admin/settings/test-email` `{to, smtp?}` | `smtp` is the unsaved console form (masked password = stored one); without it the saved settings are used. Returns `{sent, to}`, or `{sent: false, logged: true}` in dev mode without SMTP. Errors: `email_not_configured`, `email_send_failed` |
 | `GET /admin/audit?limit=&offset=` | |
