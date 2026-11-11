@@ -239,7 +239,7 @@ class _RecoveryKeyScreenState extends State<RecoveryKeyScreen> {
               title: const Text('I have saved my recovery key'),
             ),
             const SizedBox(height: 8),
-            _submit(false, 'Xong', _saved ? () => Navigator.pop(context) : null),
+            _submit(false, 'Done', _saved ? () => Navigator.pop(context) : null),
           ],
         ),
       ),

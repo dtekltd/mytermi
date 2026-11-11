@@ -31,6 +31,10 @@ class _HostListScreenState extends State<HostListScreen> {
         builder: (_) => HostEditScreen(store: app.hosts, host: host),
       ));
 
+  Future<void> _clone(Host host) => Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => HostEditScreen(store: app.hosts, cloneOf: host),
+      ));
+
   /// Jump into the host's latest session if one is open, else start one.
   void _connect(Host host, {bool forceNew = false}) {
     final existing = app.sessions.forHost(host.id).toList();
@@ -129,6 +133,8 @@ class _HostListScreenState extends State<HostListScreen> {
               _connect(h, forceNew: true);
             case 'edit':
               _edit(h);
+            case 'clone':
+              _clone(h);
             case 'delete':
               _confirmDelete(h);
           }
@@ -136,6 +142,7 @@ class _HostListScreenState extends State<HostListScreen> {
         itemBuilder: (_) => [
           const PopupMenuItem(value: 'new', child: ListTile(leading: Icon(Icons.add), title: Text('New session'))),
           const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit), title: Text('Edit'))),
+          const PopupMenuItem(value: 'clone', child: ListTile(leading: Icon(Icons.copy), title: Text('Clone'))),
           PopupMenuItem(
             value: 'delete',
             child: ListTile(leading: Icon(Icons.delete_outline, color: c.red), title: const Text('Delete')),

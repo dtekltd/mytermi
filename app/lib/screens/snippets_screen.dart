@@ -48,6 +48,8 @@ class SnippetsScreen extends StatelessWidget {
                   : ReorderableListView.builder(
                       padding: const EdgeInsets.only(bottom: 120),
                       itemCount: list.length,
+                      // Desktop would add its own handle next to ours.
+                      buildDefaultDragHandles: false,
                       onReorderItem: store.reorderSnippet,
                       itemBuilder: (context, i) {
                         final s = list[i];

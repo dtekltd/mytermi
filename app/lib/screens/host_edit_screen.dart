@@ -8,9 +8,14 @@ import 'keys_screen.dart';
 import '../util/ids.dart';
 
 class HostEditScreen extends StatefulWidget {
-  const HostEditScreen({super.key, required this.store, this.host});
+  const HostEditScreen({super.key, required this.store, this.host, this.cloneOf});
   final HostStore store;
+
+  /// Host being edited; null adds a new one.
   final Host? host;
+
+  /// Prefill a new host from this one (Clone), so only the IP or user needs changing.
+  final Host? cloneOf;
 
   @override
   State<HostEditScreen> createState() => _HostEditScreenState();
@@ -33,9 +38,9 @@ class _HostEditScreenState extends State<HostEditScreen> {
   @override
   void initState() {
     super.initState();
-    final h = widget.host;
+    final h = widget.host ?? widget.cloneOf;
     if (h != null) {
-      _label.text = h.label;
+      _label.text = widget.host == null && h.label.isNotEmpty ? '${h.label} (copy)' : h.label;
       _hostname.text = h.hostname;
       _port.text = '${h.port}';
       _username.text = h.username;
@@ -87,7 +92,7 @@ class _HostEditScreenState extends State<HostEditScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEdit ? 'Edit host' : 'Add host'),
+        title: Text(_isEdit ? 'Edit host' : widget.cloneOf != null ? 'Clone host' : 'Add host'),
         actions: [
           TextButton(onPressed: _saving ? null : _save, child: const Text('Save')),
         ],
@@ -122,7 +127,7 @@ class _HostEditScreenState extends State<HostEditScreen> {
                     decoration: const InputDecoration(labelText: 'Port'),
                     validator: (v) {
                       final p = int.tryParse((v ?? '').trim());
-                      return (p == null || p < 1 || p > 65535) ? 'Sai' : null;
+                      return (p == null || p < 1 || p > 65535) ? 'Invalid' : null;
                     },
                   ),
                 ),
