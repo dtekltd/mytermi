@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
+import 'env.dart';
 
 import 'screens/home_screen.dart';
 import 'services/app_services.dart';
@@ -6,6 +9,9 @@ import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    appVersion = (await PackageInfo.fromPlatform()).version;
+  } catch (_) {} // keep the placeholder
   final app = await AppServices.load();
   runApp(MyTermiApp(app: app));
 }

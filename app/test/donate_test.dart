@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mytermi/env.dart';
 import 'package:mytermi/screens/settings_screen.dart';
 import 'package:mytermi/services/app_services.dart';
 import 'package:mytermi/theme.dart';
@@ -46,5 +47,11 @@ void main() {
     expect(find.text('Buy me a coffee'), findsNothing);
     expect(find.text('5 USD'), findsNothing);
     expect(find.text('Source code'), findsOneWidget);
+  });
+
+  testWidgets('About shows the app version', (t) async {
+    appVersion = '1.2.3';
+    await pumpSettings(t);
+    expect(find.textContaining('version 1.2.3'), findsOneWidget);
   });
 }

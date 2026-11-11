@@ -239,7 +239,7 @@ class SettingsScreen extends StatelessWidget {
                 SettingsTile(
                   icon: Icons.info_outline,
                   title: 'MyTermi',
-                  subtitle: 'SSH client · version 1.0.0${isProd ? '' : ' · $appEnv'}',
+                  subtitle: 'SSH client · version $appVersion${isProd ? '' : ' · $appEnv'}',
                 ),
                 SettingsTile(
                   icon: Icons.code,

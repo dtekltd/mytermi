@@ -1,9 +1,11 @@
 # Builds the Windows app on a GitHub-hosted Windows runner (Flutter can only
 # build Windows apps on Windows) and publishes it as a GitHub Release.
 #
-#   - Push a tag:   git tag v1.0.1 && git push origin v1.0.1
-#   - Or by hand:   Actions -> Windows app -> Run workflow, enter the version.
-#                   The tag is created on the selected branch's latest commit.
+# The version comes from app/pubspec.yaml (`version: 1.2.3+4`).
+#   - Push a tag:   bump the version, commit, then
+#                   git tag v1.2.3 && git push origin v1.2.3   (must match pubspec)
+#   - Or by hand:   Actions -> Windows app -> Run workflow. The tag v<pubspec
+#                   version> is created on the selected branch's latest commit.
 #
 # Release asset: MyTermi-windows-x64-<version>.zip (unzip, run mytermi.exe).
 name: Windows app
@@ -13,9 +15,6 @@ on:
     tags: ['v*']
   workflow_dispatch:
     inputs:
-      version:
-        description: Version to release, e.g. v1.0.1
-        required: true
       api_url:
         description: Default sync server baked into the build (empty = repository variable MYTERMI_API_URL, else https://mytermi.vanminhso.vn)
         required: false
@@ -24,7 +23,7 @@ permissions:
   contents: write # create the tag and the release
 
 concurrency:
-  group: windows-release-${{ github.ref_name }}-${{ inputs.version }}
+  group: windows-release-${{ github.ref_name }}
 
 jobs:
   release:
@@ -33,16 +32,21 @@ jobs:
       run:
         working-directory: app
     env:
-      VERSION: ${{ github.event_name == 'push' && github.ref_name || inputs.version }}
       API_URL: ${{ inputs.api_url || vars.MYTERMI_API_URL || 'https://mytermi.vanminhso.vn' }}
     steps:
       # Checkout first: every run step uses working-directory app/.
       - uses: actions/checkout@v4
 
-      - name: Check version
+      - name: Read version from pubspec.yaml
         shell: pwsh
         run: |
-          if ($env:VERSION -notmatch '^v\d+\.\d+\.\d+$') { throw "Version must look like v1.2.3, got '$env:VERSION'" }
+          $line = Select-String -Path pubspec.yaml -Pattern '^version:\s*(\d+\.\d+\.\d+)(\+\d+)?\s*$' | Select-Object -First 1
+          if (-not $line) { throw "pubspec.yaml needs 'version: 1.2.3+4'" }
+          $version = "v$($line.Matches[0].Groups[1].Value)"
+          if ('${{ github.event_name }}' -eq 'push' -and '${{ github.ref_name }}' -ne $version) {
+            throw "Tag ${{ github.ref_name }} doesn't match pubspec.yaml version $version"
+          }
+          "VERSION=$version" >> $env:GITHUB_ENV
 
       - uses: subosito/flutter-action@v2
         with:
@@ -56,9 +60,8 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
-          $name = $env:VERSION.Substring(1)   # v1.2.3 -> 1.2.3 (exe file/product version)
+          # Version and build number come from pubspec.yaml.
           flutter build windows --release `
-            --build-name=$name --build-number=${{ github.run_number }} `
             --dart-define=APP_ENV=prod --dart-define=API_URL=$env:API_URL
           Compress-Archive -Force -Path build\windows\x64\runner\Release\* `
             -DestinationPath "build\windows\MyTermi-windows-x64-$env:VERSION.zip"
