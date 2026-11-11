@@ -1,16 +1,14 @@
 # Builds the Windows app on a GitHub-hosted Windows runner (Flutter can only
 # build Windows apps on Windows).
 #
-#   - Every push to main that touches app/: zip uploaded as a workflow artifact
-#     (Actions tab -> run -> Artifacts -> MyTermi-windows-x64).
-#   - Tags v*: the zip is also attached to a GitHub Release.
-#   - "Run workflow" button: manual build, optionally pointing at a sync server.
+#   - "Run workflow" button (Actions tab): manual build, optionally pointing at
+#     a sync server. The zip is uploaded as a workflow artifact
+#     (run -> Artifacts -> MyTermi-windows-x64).
+#   - Pushing a v* tag: same build, and the zip is attached to a GitHub Release.
 name: Windows app
 
 on:
   push:
-    branches: [main]
-    paths: ['app/**', '.github/workflows/windows.yml']
     tags: ['v*']
   workflow_dispatch:
     inputs:
