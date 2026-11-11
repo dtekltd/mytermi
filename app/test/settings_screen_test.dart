@@ -54,4 +54,19 @@ void main() {
     await pumpSettings(t);
     expect(find.textContaining('version 1.2.3'), findsOneWidget);
   });
+
+  testWidgets('desktop marks touch settings as mobile-only', (t) async {
+    debugIsDesktop = true;
+    await pumpSettings(t);
+    expect(find.text('Touch gestures · mobile app only'), findsOneWidget);
+    for (final label in ['Match app', 'Bar', 'High']) {
+      expect(find.text(label), findsOneWidget);
+    }
+  });
+
+  testWidgets('phone shows the plain touch section', (t) async {
+    debugIsDesktop = false;
+    await pumpSettings(t);
+    expect(find.text('Touch gestures'), findsOneWidget);
+  });
 }

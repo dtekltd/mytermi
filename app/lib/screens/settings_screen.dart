@@ -79,7 +79,7 @@ class SettingsScreen extends StatelessWidget {
                   below: SegmentedButton<TerminalColors>(
                     showSelectedIcon: false,
                     segments: const [
-                      ButtonSegment(value: TerminalColors.auto, label: Text('Theo app')),
+                      ButtonSegment(value: TerminalColors.auto, label: Text('Match app')),
                       ButtonSegment(value: TerminalColors.light, label: Text('Light')),
                       ButtonSegment(value: TerminalColors.dark, label: Text('Dark')),
                     ],
@@ -115,17 +115,25 @@ class SettingsScreen extends StatelessWidget {
                     segments: const [
                       ButtonSegment(value: TerminalCursorType.block, label: Text('Block')),
                       ButtonSegment(value: TerminalCursorType.underline, label: Text('Underline')),
-                      ButtonSegment(value: TerminalCursorType.verticalBar, label: Text('Thanh')),
+                      ButtonSegment(value: TerminalCursorType.verticalBar, label: Text('Bar')),
                     ],
                     selected: {s.cursorType},
                     onSelectionChanged: (v) => s.cursorType = v.first,
                   ),
                 ),
+                SettingsSwitch(
+                  icon: Icons.logout,
+                  title: 'Confirm before closing a session',
+                  value: s.confirmClose,
+                  onChanged: (v) => s.confirmClose = v,
+                ),
               ],
             ),
 
             // -------------------------------------------------- gestures
-            const SectionLabel('Gestures'),
+            // Swipe arrows, double tap and haptics drive the phone UI only; desktop uses
+            // the mouse and a hardware keyboard.
+            SectionLabel(isDesktop ? 'Touch gestures · mobile app only' : 'Touch gestures'),
             SettingsGroup(
               children: [
                 SettingsTile(
@@ -137,7 +145,7 @@ class SettingsScreen extends StatelessWidget {
                     segments: const [
                       ButtonSegment(value: SwipeSensitivity.low, label: Text('Low')),
                       ButtonSegment(value: SwipeSensitivity.medium, label: Text('Medium')),
-                      ButtonSegment(value: SwipeSensitivity.high, label: Text('Cao')),
+                      ButtonSegment(value: SwipeSensitivity.high, label: Text('High')),
                     ],
                     selected: {s.swipe},
                     onSelectionChanged: (v) => s.swipe = v.first,
@@ -154,12 +162,6 @@ class SettingsScreen extends StatelessWidget {
                   title: 'Haptic feedback',
                   value: s.haptics,
                   onChanged: (v) => s.haptics = v,
-                ),
-                SettingsSwitch(
-                  icon: Icons.logout,
-                  title: 'Confirm before closing a session',
-                  value: s.confirmClose,
-                  onChanged: (v) => s.confirmClose = v,
                 ),
               ],
             ),
