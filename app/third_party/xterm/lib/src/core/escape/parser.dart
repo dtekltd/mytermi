@@ -328,13 +328,19 @@ class EscapeParser {
   ///
   /// https://terminalguide.namepad.de/seq/csi_sc/
   void _csiHandleSendDeviceAttributes() {
+    // MyTermi: only `CSI c` / `CSI 0 c` ask for attributes. `CSI ? Ps c` is the
+    // Linux console's cursor-shape control (TERM=linux, e.g. inside an LXC via
+    // `pct enter`); answering it injected `ESC [ ? 1 ; 2 c` into the app's
+    // input, so nano showed "Unknown sequence" and keys stopped working.
+    final params = _csi.params;
+    if (params.isNotEmpty && !(params.length == 1 && params.first == 0)) return;
     switch (_csi.prefix) {
+      case null:
+        return handler.sendPrimaryDeviceAttributes();
       case Ascii.greaterThan:
         return handler.sendSecondaryDeviceAttributes();
       case Ascii.equal:
         return handler.sendTertiaryDeviceAttributes();
-      default:
-        handler.sendPrimaryDeviceAttributes();
     }
   }
 

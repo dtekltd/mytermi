@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -11,6 +12,7 @@ import 'package:mytermi/util/platform.dart';
 import 'package:mytermi/widgets/extra_keys.dart';
 import 'package:mytermi/widgets/terminal_gestures.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:xterm/xterm.dart';
 
 void main() {
   late AppServices app;
@@ -111,6 +113,39 @@ void main() {
     await t.sendKeyEvent(LogicalKeyboardKey.backspace);
     await t.pump();
     expect(out.last, '\x7f');
+    await close(t, s);
+  });
+
+  testWidgets('desktop: mouse drag selects the text under the pointer, with scrollback', (t) async {
+    debugIsDesktop = true;
+    t.view.physicalSize = const Size(1100, 700);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    final s = await open(t);
+    for (var i = 0; i < 80; i++) {
+      s.terminal.write('line $i\r\n');
+    }
+    s.terminal.write('target here\r\nafter');
+    await t.pumpAndSettle();
+
+    final view = t.state<TerminalViewState>(find.byType(TerminalView));
+    final cell = view.renderTerminal.cellSize;
+    final b = s.terminal.buffer;
+    final y = b.absoluteCursorY - 1; // the "target here" row
+    // Where that row is on screen: from the cursor, which sits one row below it.
+    final cursor = view.globalCursorRect;
+    final start = Offset(cursor.left - cell.width * 5 + 1, cursor.center.dy - cell.height); // column 0 (cursor is after "after")
+    final g = await t.startGesture(start, kind: PointerDeviceKind.mouse);
+    await t.pump(const Duration(milliseconds: 50));
+    await g.moveTo(start + Offset(cell.width * 6, 0));
+    await t.pump();
+    await g.up();
+    await t.pumpAndSettle();
+
+    final sel = s.controller.selection;
+    expect(sel, isNotNull);
+    expect(sel!.begin.y, y);
+    expect(b.getText(sel), startsWith('targe'));
     await close(t, s);
   });
 

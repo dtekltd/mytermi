@@ -196,10 +196,21 @@ class SshSession extends ChangeNotifier {
 
   void _write(String s) => terminal.write(s);
 
+  /// Leaves the alternate screen and resets scroll margins, origin mode,
+  /// keypad/cursor-key modes, bracketed paste, mouse reporting, charsets,
+  /// attributes and cursor visibility.
+  @visibleForTesting
+  static const resetModes = '\x1b[?1049l\x1b[r\x1b[?6l\x1b[?1l\x1b>\x1b[?2004l'
+      '\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l\x1b[?1004l'
+      '\x0f\x1b(B\x1b)B\x1b[0m\x1b[4l\x1b[?7h\x1b[?25h';
+
   Future<void> connect() async {
     _close();
     final gen = ++_gen;
     _setStatus(SessionStatus.connecting);
+    // A reconnect reuses the terminal: undo whatever the last program left
+    // set (nano or vim killed with the connection), keeping the scrollback.
+    _write(resetModes);
     _write('\r\n\x1b[90mConnecting to ${host.address} ...\x1b[0m\r\n');
 
     try {
