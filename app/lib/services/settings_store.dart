@@ -85,6 +85,12 @@ class SettingsStore extends ChangeNotifier {
 
   bool get confirmClose => _p.getBool('s_confirm_close') ?? true;
   set confirmClose(bool v) => _set('s_confirm_close', v);
+
+  /// Desktop: type through the system input method (IME) instead of raw key
+  /// events. Needed for the Windows Vietnamese Telex/VNI keyboards and for
+  /// Chinese/Japanese/Korean input; off by default.
+  bool get desktopIme => _p.getBool('s_desktop_ime') ?? false;
+  set desktopIme(bool v) => _set('s_desktop_ime', v);
 }
 
 /// Haptic feedback that respects the user's setting.

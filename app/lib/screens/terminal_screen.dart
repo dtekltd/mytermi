@@ -45,6 +45,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
     super.initState();
     _m.addListener(_onManagerChanged);
     _settings.addListener(_onSettingsChanged);
+    _focusNode.addListener(_onFocusChanged);
   }
 
   @override
@@ -64,6 +65,22 @@ class _TerminalScreenState extends State<TerminalScreen> {
 
   void _onSettingsChanged() {
     if (mounted) setState(() {});
+    _onFocusChanged(); // IME typing may have just been switched on
+  }
+
+  /// Desktop typing goes either straight from key events (default) or, with
+  /// IME typing on, through xterm's text-input connection, which is what the
+  /// Windows Vietnamese/CJK input methods compose into.
+  bool get _useIme => isDesktop && _settings.desktopIme;
+
+  /// xterm opens its text-input connection only when focus arrives with a tap.
+  /// Autofocus and focus coming back after a dialog don't, so open it whenever
+  /// the terminal gains focus.
+  void _onFocusChanged() {
+    if (!_useIme || !_focusNode.hasFocus) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _focusNode.hasFocus) _view?.requestKeyboard();
+    });
   }
 
   /// Terminal colours: follow the app theme unless forced in Settings.
@@ -520,9 +537,9 @@ class _TerminalScreenState extends State<TerminalScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       keyboardAppearance: Brightness.dark,
       deleteDetection: true,
-      // Desktop: take typed characters straight from key events. The text-input
-      // (IME) path didn't deliver characters on Windows, only special keys.
-      hardwareKeyboardOnly: isDesktop,
+      // Desktop: take typed characters straight from key events, unless IME
+      // typing is on (Settings > Terminal) for Vietnamese/CJK input methods.
+      hardwareKeyboardOnly: isDesktop && !_useIme,
       shortcuts: _shortcuts,
       onKeyEvent: _onKeyEvent,
       // Right click: copy the selection, or paste when nothing is selected.

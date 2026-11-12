@@ -121,6 +121,15 @@ class SettingsScreen extends StatelessWidget {
                     onSelectionChanged: (v) => s.cursorType = v.first,
                   ),
                 ),
+                if (isDesktop)
+                  SettingsSwitch(
+                    icon: Icons.translate,
+                    title: 'Type with input method (IME)',
+                    subtitle: 'Turn on for the Windows Vietnamese keyboard (Telex/VNI) or Chinese, Japanese and '
+                        'Korean input. Unikey and EVKey work either way.',
+                    value: s.desktopIme,
+                    onChanged: (v) => s.desktopIme = v,
+                  ),
                 SettingsSwitch(
                   icon: Icons.logout,
                   title: 'Confirm before closing a session',

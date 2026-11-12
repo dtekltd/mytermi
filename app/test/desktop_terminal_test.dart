@@ -79,6 +79,38 @@ void main() {
     await close(t, s);
   });
 
+  testWidgets('desktop IME typing: composed text (e.g. Vietnamese Telex) reaches the shell once committed', (t) async {
+    debugIsDesktop = true;
+    app.settings.desktopIme = true;
+    final s = await open(t);
+    final out = <String>[];
+    s.terminal.onOutput = out.add;
+    await t.pump();
+    // The text-input connection opens without clicking the terminal first.
+    expect(t.testTextInput.hasAnyClients, isTrue);
+
+    // xterm keeps two spaces in the field for delete detection.
+    t.testTextInput.updateEditingValue(const TextEditingValue(
+      text: '  vie',
+      selection: TextSelection.collapsed(offset: 5),
+      composing: TextRange(start: 2, end: 5),
+    ));
+    await t.pump();
+    expect(out, isEmpty); // still composing
+    t.testTextInput.updateEditingValue(const TextEditingValue(
+      text: '  vi\u1EC7t',
+      selection: TextSelection.collapsed(offset: 6),
+    ));
+    await t.pump();
+    expect(out.join(), 'vi\u1EC7t');
+
+    // Special keys still come from key events.
+    await t.sendKeyEvent(LogicalKeyboardKey.backspace);
+    await t.pump();
+    expect(out.last, '\x7f');
+    await close(t, s);
+  });
+
   for (final desktop in [true, false]) {
     testWidgets('Enter with a selection copies it (desktop only), desktop=$desktop', (t) async {
       debugIsDesktop = desktop;
