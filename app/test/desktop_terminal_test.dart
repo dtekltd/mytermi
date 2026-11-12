@@ -88,6 +88,9 @@ void main() {
     await t.pump();
     // The text-input connection opens without clicking the terminal first.
     expect(t.testTextInput.hasAnyClients, isTrue);
+    // Windows rejects a text-input client without a view id (no typing at all).
+    final setClient = t.testTextInput.log.lastWhere((c) => c.method == 'TextInput.setClient');
+    expect(((setClient.arguments as List)[1] as Map)['viewId'], isNotNull);
 
     // xterm keeps two spaces in the field for delete detection.
     t.testTextInput.updateEditingValue(const TextEditingValue(
