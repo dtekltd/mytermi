@@ -105,18 +105,25 @@ class _HostListScreenState extends State<HostListScreen> {
                   action: FilledButton.icon(onPressed: _edit, icon: const Icon(Icons.add), label: const Text('Add host')),
                 ),
               )
+            else if (_q.isEmpty)
+              // Drag the handle to reorder, like Snippets. Not while searching:
+              // indexes in a filtered list don't map onto the stored order.
+              SliverReorderableList(
+                itemCount: hosts.length,
+                onReorderItem: app.hosts.reorderHost,
+                itemBuilder: (context, i) => KeyedSubtree(key: ValueKey(hosts[i].id), child: _hostCard(hosts[i], i)),
+              )
             else
-              SliverList.list(children: [
-                for (final h in hosts) _hostCard(h),
-                const SizedBox(height: 120),
-              ]),
+              SliverList.list(children: [for (final h in hosts) _hostCard(h)]),
+            if (all.isNotEmpty) const SliverToBoxAdapter(child: SizedBox(height: 120)),
           ]);
         },
       ),
     );
   }
 
-  Widget _hostCard(Host h) {
+  /// [index] is set when the list is reorderable: the card then gets a drag handle.
+  Widget _hostCard(Host h, [int? index]) {
     final c = context.colors;
     final active = app.sessions.forHost(h.id).length;
     return ItemCard(
@@ -125,30 +132,45 @@ class _HostListScreenState extends State<HostListScreen> {
       subtitle: active > 0 ? '$active active connection${active > 1 ? 's' : ''}' : 'ssh, ${h.username}',
       subtitleColor: active > 0 ? c.green : null,
       onTap: () => _connect(h),
-      trailing: PopupMenuButton<String>(
-        icon: Icon(Icons.more_horiz, color: c.text, size: 28),
-        onSelected: (v) {
-          switch (v) {
-            case 'new':
-              _connect(h, forceNew: true);
-            case 'edit':
-              _edit(h);
-            case 'clone':
-              _clone(h);
-            case 'delete':
-              _confirmDelete(h);
-          }
-        },
-        itemBuilder: (_) => [
-          const PopupMenuItem(value: 'new', child: ListTile(leading: Icon(Icons.add), title: Text('New session'))),
-          const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit), title: Text('Edit'))),
-          const PopupMenuItem(value: 'clone', child: ListTile(leading: Icon(Icons.copy), title: Text('Clone'))),
-          PopupMenuItem(
-            value: 'delete',
-            child: ListTile(leading: Icon(Icons.delete_outline, color: c.red), title: const Text('Delete')),
+      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+        if (index != null)
+          ReorderableDragStartListener(
+            index: index,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Icon(Icons.drag_handle, color: c.textDim),
+            ),
           ),
-        ],
-      ),
+        _menu(h),
+      ]),
+    );
+  }
+
+  Widget _menu(Host h) {
+    final c = context.colors;
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_horiz, color: c.text, size: 28),
+      onSelected: (v) {
+        switch (v) {
+          case 'new':
+            _connect(h, forceNew: true);
+          case 'edit':
+            _edit(h);
+          case 'clone':
+            _clone(h);
+          case 'delete':
+            _confirmDelete(h);
+        }
+      },
+      itemBuilder: (_) => [
+        const PopupMenuItem(value: 'new', child: ListTile(leading: Icon(Icons.add), title: Text('New session'))),
+        const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit), title: Text('Edit'))),
+        const PopupMenuItem(value: 'clone', child: ListTile(leading: Icon(Icons.copy), title: Text('Clone'))),
+        PopupMenuItem(
+          value: 'delete',
+          child: ListTile(leading: Icon(Icons.delete_outline, color: c.red), title: const Text('Delete')),
+        ),
+      ],
     );
   }
 }

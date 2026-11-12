@@ -70,4 +70,30 @@ void main() {
     expect(find.byIcon(Icons.drag_handle), findsOneWidget);
     debugDefaultTargetPlatformOverride = null;
   });
+
+  testWidgets('hosts reorder by dragging the handle; no handles while searching', (t) async {
+    for (final (id, name) in [('a', 'alpha'), ('b', 'bravo'), ('c', 'charlie')]) {
+      await app.hosts.save(Host(id: id, label: name, hostname: '10.0.0.1', username: 'u'), const HostSecrets());
+    }
+    await pump(t, HostListScreen(app: app));
+    expect(find.byIcon(Icons.drag_handle), findsNWidgets(3));
+
+    // Drag "alpha" below "charlie".
+    final handle = find.byIcon(Icons.drag_handle).first;
+    final g = await t.startGesture(t.getCenter(handle));
+    await t.pump(const Duration(milliseconds: 50));
+    await g.moveBy(const Offset(0, 300));
+    await t.pump();
+    await g.up();
+    await t.pumpAndSettle();
+    expect(app.hosts.hosts.map((h) => h.id), ['b', 'c', 'a']);
+
+    // Persisted.
+    final reloaded = await AppServices.load(startSync: false);
+    expect(reloaded.hosts.hosts.map((h) => h.id), ['b', 'c', 'a']);
+
+    await t.enterText(find.byType(TextField).first, 'a');
+    await t.pumpAndSettle();
+    expect(find.byIcon(Icons.drag_handle), findsNothing);
+  });
 }

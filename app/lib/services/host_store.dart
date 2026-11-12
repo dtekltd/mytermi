@@ -93,6 +93,12 @@ class HostStore extends ChangeNotifier {
     await _persist();
   }
 
+  /// [to] is the index after removal (SliverReorderableList.onReorderItem).
+  Future<void> reorderHost(int from, int to) async {
+    _hosts.insert(to, _hosts.removeAt(from));
+    await _persist();
+  }
+
   Future<HostSecrets> secretsFor(Host host) async =>
       HostSecrets(password: await _secure.read(key: 'pw_${host.id}'));
 
