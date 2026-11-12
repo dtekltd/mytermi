@@ -4,6 +4,7 @@ import '../models/snippet.dart';
 import '../services/command_store.dart';
 import '../theme.dart';
 import '../util/ids.dart';
+import '../util/snippet_keys.dart';
 import '../widgets/common.dart';
 
 class SnippetsScreen extends StatelessWidget {
@@ -63,7 +64,11 @@ class SnippetsScreen extends StatelessWidget {
                           ),
                           onDismissed: (_) => store.deleteSnippet(s),
                           child: ItemCard(
-                            icon: s.autoRun ? Icons.bolt : Icons.short_text,
+                            icon: snippetHasKeys(s.command)
+                                ? Icons.keyboard_alt_outlined
+                                : s.autoRun
+                                    ? Icons.bolt
+                                    : Icons.short_text,
                             iconColor: c.snippet,
                             title: s.displayName,
                             subtitle: s.command.split('\n').first,
@@ -116,6 +121,27 @@ class _SnippetEditScreenState extends State<_SnippetEditScreen> {
   late final _name = TextEditingController(text: widget.snippet?.name ?? '');
   late final _command = TextEditingController(text: widget.snippet?.command ?? widget.initialCommand ?? '');
   late bool _autoRun = widget.snippet?.autoRun ?? true;
+  late bool _hasKeys = snippetHasKeys(_command.text);
+
+  @override
+  void initState() {
+    super.initState();
+    _command.addListener(() {
+      final k = snippetHasKeys(_command.text);
+      if (k != _hasKeys) setState(() => _hasKeys = k);
+    });
+  }
+
+  /// Inserts [token] at the cursor (or replaces the selection).
+  void _insert(String token) {
+    final v = _command.value;
+    final sel = v.selection.isValid ? v.selection : TextSelection.collapsed(offset: v.text.length);
+    _command.value = TextEditingValue(
+      text: v.text.replaceRange(sel.start, sel.end, token),
+      // "{ctrl+}" leaves the cursor before the brace to type the key.
+      selection: TextSelection.collapsed(offset: sel.start + token.length - (token.endsWith('+}') ? 1 : 0)),
+    );
+  }
 
   @override
   void dispose() {
@@ -169,16 +195,32 @@ class _SnippetEditScreenState extends State<_SnippetEditScreen> {
               minLines: 3,
               maxLines: 10,
               style: const TextStyle(fontFamily: monoFont),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Command',
                 hintText: 'sudo systemctl restart nginx',
-                helperText: 'Multiple lines = run each command in turn',
+                helperText: _hasKeys
+                    ? 'Sent exactly as written, keys included. Add {enter} where Enter is needed.'
+                    : 'Multiple lines = run each command in turn. Keys go in braces, e.g. {ctrl+b}d detaches tmux.',
+                helperMaxLines: 2,
                 alignLabelWithHint: true,
               ),
               validator: (v) => (v ?? '').trim().isEmpty ? 'Required' : null,
             ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final (label, token) in _keyChips)
+                  ActionChip(
+                    label: Text(label, style: const TextStyle(fontSize: 12.5)),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _insert(token),
+                  ),
+              ],
+            ),
             const SizedBox(height: 12),
-            SwitchListTile(
+            if (!_hasKeys) SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Run immediately when selected'),
               subtitle: const Text('Presses Enter automatically. Turn off to edit the command before running it.'),
@@ -191,3 +233,16 @@ class _SnippetEditScreenState extends State<_SnippetEditScreen> {
     );
   }
 }
+
+/// Quick-insert buttons in the snippet editor.
+const _keyChips = [
+  ('Ctrl+B', '{ctrl+b}'),
+  ('Ctrl+C', '{ctrl+c}'),
+  ('Ctrl+D', '{ctrl+d}'),
+  ('Esc', '{esc}'),
+  ('Enter', '{enter}'),
+  ('Tab', '{tab}'),
+  ('↑', '{up}'),
+  ('↓', '{down}'),
+  ('Ctrl+…', '{ctrl+}'),
+];

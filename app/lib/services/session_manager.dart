@@ -8,6 +8,7 @@ import 'package:xterm/xterm.dart';
 
 import '../models/host.dart';
 import '../util/ids.dart';
+import '../util/snippet_keys.dart';
 import 'command_store.dart';
 import 'echo_check.dart';
 import 'host_store.dart';
@@ -126,9 +127,19 @@ class SshSession extends ChangeNotifier {
   }
 
   void applySuggestion(Suggestion s, {bool? run}) {
+    if (s.snippet != null && snippetHasKeys(s.text)) return sendKeys(s.text);
     run ??= s.snippet?.autoRun ?? false;
     final text = s.text.replaceAll('\r\n', '\n').replaceAll('\n', '\r');
     send(tracker.replaceWith(text) + (run ? '\r' : ''));
+  }
+
+  /// Sends a snippet with key tokens (`{ctrl+b}d`) exactly as written: it is
+  /// meant for whatever has the keyboard (tmux, vim...), so the typed line is
+  /// left alone and Enter is only pressed where the snippet says `{enter}`.
+  void sendKeys(String snippet) {
+    ctrl.value = false;
+    alt.value = false;
+    encodeSnippet(snippet, terminal).forEach(send);
   }
 
   // ---------------------------------------------------- history / suggest
