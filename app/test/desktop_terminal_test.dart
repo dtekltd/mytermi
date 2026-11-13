@@ -229,4 +229,22 @@ void main() {
     expect(out.join(), contains('pasted'));
     await close(t, s);
   });
+
+  testWidgets('right click pastes even while the program has mouse reporting on (Claude Code)', (t) async {
+    debugIsDesktop = true;
+    final s = await open(t);
+    s.terminal.write('\x1b[?1049h\x1b[?1000h\x1b[?1002h\x1b[?1006h\x1b[?2004h');
+    final out = <String>[];
+    s.terminal.onOutput = out.add;
+    t.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.getData') return {'text': 'pasted'};
+      return null;
+    });
+
+    await t.tapAt(t.getCenter(find.byType(TerminalView)), buttons: kSecondaryMouseButton, kind: PointerDeviceKind.mouse);
+    await t.pumpAndSettle();
+
+    expect(out, ['\x1b[200~pasted\x1b[201~']); // no mouse report sent to the program
+    await close(t, s);
+  });
 }

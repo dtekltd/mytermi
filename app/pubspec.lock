@@ -827,7 +827,7 @@ packages:
       path: "third_party/xterm"
       relative: true
     source: path
-    version: "4.0.0+mytermi.2"
+    version: "4.0.0+mytermi.3"
   yaml:
     dependency: transitive
     description:

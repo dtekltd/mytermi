@@ -140,11 +140,23 @@ class _TerminalGestureHandlerState extends State<TerminalGestureHandler> {
     _tapUp(widget.onSingleTapUp, details, TerminalMouseButton.left);
   }
 
+  // mytermi: when the embedder handles the right button (copy/paste), it
+  // keeps it even while the program has mouse reporting on (Claude Code, vim
+  // with mouse=a, htop...), like Windows Terminal and PuTTY. Otherwise the
+  // click went to the program and right-click paste silently did nothing.
   void onSecondaryTapDown(TapDownDetails details) {
+    if (widget.onSecondaryTapDown != null) {
+      widget.onSecondaryTapDown!(details);
+      return;
+    }
     _tapDown(widget.onSecondaryTapDown, details, TerminalMouseButton.right);
   }
 
   void onSecondaryTapUp(TapUpDetails details) {
+    if (widget.onSecondaryTapDown != null) {
+      widget.onSecondaryTapUp?.call(details);
+      return;
+    }
     _tapUp(widget.onSecondaryTapUp, details, TerminalMouseButton.right);
   }
 
