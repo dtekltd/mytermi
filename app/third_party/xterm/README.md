@@ -17,6 +17,9 @@ with these fixes on top:
    button (`onSecondaryTapDown`), it keeps it even while the program has mouse
    reporting on. Otherwise right-click paste did nothing in Claude Code, vim
    with `mouse=a`, htop and so on.
+5. `lib/src/utils/circular_buffer.dart`: `trimStart` (used when `CSI 3 J` clears
+   the scrollback, which `clear` sends) moves the absolute start index. Lines kept
+   reporting their old index, so mouse selections were drawn rows below the text.
 
 Only `lib/` is kept. Drop this folder and go back to the pub.dev package once
 upstream ships these fixes.

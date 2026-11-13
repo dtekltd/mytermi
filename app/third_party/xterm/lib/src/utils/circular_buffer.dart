@@ -224,6 +224,13 @@ class IndexAwareCircularBuffer<T extends IndexedItem> {
   /// instead just adjusts the start index and length.
   void trimStart(int count) {
     if (count > _length) count = _length;
+    // mytermi: detach the dropped items and move the absolute start with them,
+    // or every remaining item reports an index [count] too high (after
+    // `clear`, which sends CSI 3 J, mouse selections showed up lower down).
+    for (var i = 0; i < count; i++) {
+      _dropChild(i);
+    }
+    _absoluteStartIndex += count;
     _startIndex += count;
     _startIndex %= _array.length;
     _length -= count;
