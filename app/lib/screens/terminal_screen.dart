@@ -116,15 +116,21 @@ class _TerminalScreenState extends State<TerminalScreen> {
     final id = _m.active!.id;
     if (id != _activeId) {
       _activeId = id;
-      if (isDesktop) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          _focusNode.requestFocus();
-          if (_useIme) _view?.requestKeyboard();
-        });
-      }
+      _focusTerminal();
     }
     setState(() {});
+  }
+
+  /// Desktop: puts the keyboard focus back in the active terminal (and, with
+  /// IME typing, its text-input connection), e.g. after switching sessions or
+  /// clicking Reconnect, which would otherwise keep the focus on the button.
+  void _focusTerminal() {
+    if (!isDesktop) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _focusNode.requestFocus();
+      if (_useIme) _view?.requestKeyboard();
+    });
   }
 
   void _start(SshSession s) {
@@ -296,7 +302,10 @@ class _TerminalScreenState extends State<TerminalScreen> {
       if (s.isConnected)
         (Icons.link_off, 'Disconnect', s.disconnect)
       else
-        (Icons.refresh, 'Reconnect', s.connect),
+        (Icons.refresh, 'Reconnect', () {
+          s.connect();
+          _focusTerminal();
+        }),
       (Icons.close, 'Close session', () => _closeSession(s)),
     ];
     final picked = await showModalBottomSheet<VoidCallback>(
@@ -604,7 +613,10 @@ class _TerminalScreenState extends State<TerminalScreen> {
                       bottom: 16,
                       child: Center(
                         child: FilledButton.icon(
-                          onPressed: s.connect,
+                          onPressed: () {
+                            s.connect();
+                            _focusTerminal();
+                          },
                           icon: const Icon(Icons.refresh),
                           label: const Text('Reconnect'),
                         ),

@@ -290,4 +290,38 @@ void main() {
       await close(t, first);
     });
   }
+
+  for (final ime in [false, true]) {
+    testWidgets('desktop: after clicking Reconnect, typing works without clicking the terminal, ime=$ime', (t) async {
+      debugIsDesktop = true;
+      app.settings.desktopIme = ime;
+      // A saved password, so reconnecting doesn't stop at a password prompt.
+      await app.hosts.save(app.hosts.hosts.first, const HostSecrets(password: 'pw'));
+      final s = await open(t);
+      s.status = SessionStatus.disconnected;
+      s.notifyListeners();
+      await t.pumpAndSettle();
+
+      // Focus is gone by the time the user gets to the button, e.g. the window
+      // was in the background when the connection dropped.
+      FocusManager.instance.primaryFocus?.unfocus();
+      await t.pump();
+      await t.tap(find.text('Reconnect'));
+      for (var i = 0; i < 5; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      final out = <String>[];
+      s.terminal.onOutput = out.add;
+      if (ime) {
+        expect(t.testTextInput.hasAnyClients, isTrue);
+        t.testTextInput.updateEditingValue(const TextEditingValue(text: '  a', selection: TextSelection.collapsed(offset: 3)));
+      } else {
+        await t.sendKeyEvent(LogicalKeyboardKey.keyA);
+      }
+      await t.pump();
+      expect(out, ['a']);
+      await close(t, s);
+      await t.pump(const Duration(seconds: 11)); // let the connect timeout run out
+    });
+  }
 }
