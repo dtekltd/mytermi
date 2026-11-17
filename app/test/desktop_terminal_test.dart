@@ -247,4 +247,47 @@ void main() {
     expect(out, ['\x1b[200~pasted\x1b[201~']); // no mouse report sent to the program
     await close(t, s);
   });
+
+  for (final ime in [false, true]) {
+    testWidgets('desktop: switching session tabs focuses the terminal, so typing works without a click, ime=$ime', (t) async {
+      debugIsDesktop = true;
+      app.settings.desktopIme = ime;
+      t.view.physicalSize = const Size(1100, 700);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
+      final first = await open(t);
+      final second = app.sessions.open(app.hosts.hosts.first);
+      second.status = SessionStatus.connected;
+      await t.pumpAndSettle();
+      final out1 = <String>[], out2 = <String>[];
+      first.terminal.onOutput = out1.add;
+      second.terminal.onOutput = out2.add;
+
+      // Typing: key events, or with IME on, the text-input connection.
+      Future<void> type(String ch) async {
+        if (ime) {
+          expect(t.testTextInput.hasAnyClients, isTrue);
+          t.testTextInput.updateEditingValue(TextEditingValue(text: '  $ch', selection: const TextSelection.collapsed(offset: 3)));
+        } else {
+          await t.sendKeyEvent(ch == 'a' ? LogicalKeyboardKey.keyA : LogicalKeyboardKey.keyB);
+        }
+        await t.pump();
+      }
+
+      await t.tap(find.text(app.sessions.titleOf(first))); // back to the first session
+      await t.pumpAndSettle();
+      expect(app.sessions.active, first);
+      await type('a');
+      expect(out1.join(), 'a');
+
+      await t.tap(find.text(app.sessions.titleOf(second)));
+      await t.pumpAndSettle();
+      expect(app.sessions.active, second);
+      await type('b');
+      expect(out2.join(), 'b');
+
+      app.sessions.close(second);
+      await close(t, first);
+    });
+  }
 }

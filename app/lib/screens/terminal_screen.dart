@@ -36,6 +36,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
   double _pinchBaseFont = 14;
   double _altScrollAcc = 0;
   bool _popped = false;
+  String? _activeId;
 
   SessionManager get _m => widget.manager;
   SettingsStore get _settings => _m.settings;
@@ -107,6 +108,22 @@ class _TerminalScreenState extends State<TerminalScreen> {
       c.dispose();
       return true;
     });
+    // Desktop: switching to another session (a tab in the session bar, a new
+    // connection) puts the cursor in its terminal, so typing works right away
+    // without clicking the terminal first. The focus node is shared, so with
+    // IME typing it may already have focus while the new terminal has no
+    // text-input connection yet: open it too.
+    final id = _m.active!.id;
+    if (id != _activeId) {
+      _activeId = id;
+      if (isDesktop) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _focusNode.requestFocus();
+          if (_useIme) _view?.requestKeyboard();
+        });
+      }
+    }
     setState(() {});
   }
 
