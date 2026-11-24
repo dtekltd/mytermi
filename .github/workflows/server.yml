@@ -14,8 +14,10 @@
 # visibility): shipyard and the servers pull it without credentials.
 #
 # Shipyard (optional; register is skipped while unset):
-#   vars.SHIPYARD_URL        e.g. https://shipyard.vanminhso.vn
+#   vars.SHIPYARD_URL        address reachable from GitHub, e.g. https://shipyard-ext.vanminhso.vn
 #   secrets.SHIPYARD_TOKEN   CI token of the project (Project -> CI tokens)
+#   secrets.CF_ACCESS_CLIENT_ID, secrets.CF_ACCESS_CLIENT_SECRET
+#                            Cloudflare Access service token, when SHIPYARD_URL is behind Access
 name: Server
 
 on:
@@ -140,6 +142,8 @@ jobs:
           DIGEST: ${{ needs.image.outputs.digest }}
           VERSION: ${{ needs.image.outputs.version }}
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           set -euo pipefail
           # jq builds the JSON so commit messages with quotes are safe.
@@ -147,6 +151,10 @@ jobs:
             --arg img "$IMAGE" --arg d "$DIGEST" --arg v "$VERSION" \
             '{git_sha: $sha, git_ref: $ref, version: $v, commit_message: $msg,
               images: [{component: "server", image_ref: $img, digest: $d}]}')
-          curl --fail-with-body -sS -X POST "$SHIPYARD_URL/api/v1/hooks/releases" \
+          access=()
+          if [ -n "$CF_ACCESS_CLIENT_ID" ]; then
+            access=(-H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: $CF_ACCESS_CLIENT_SECRET")
+          fi
+          curl --fail-with-body -sS -X POST "$SHIPYARD_URL/api/v1/hooks/releases" "${access[@]}" \
             -H "Authorization: Bearer $SHIPYARD_TOKEN" -H "Content-Type: application/json" \
             --retry 3 --retry-all-errors -d "$body"
