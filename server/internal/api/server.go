@@ -55,6 +55,9 @@ type Server struct {
 	// Mailer overrides SMTP from settings (tests).
 	Mailer mail.Sender
 
+	// Version is the build version (git describe, set by main), shown in the console.
+	Version string
+
 	mu         sync.Mutex
 	settings   *Settings
 	settingsAt time.Time

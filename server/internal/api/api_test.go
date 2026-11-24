@@ -67,6 +67,7 @@ func setup(t *testing.T) *env {
 	}
 	rec := &mail.Recorder{}
 	s.Mailer = rec
+	s.Version = "v9.9.9-test"
 
 	// Fake Google/Apple JWKS endpoint signed with our own RSA key.
 	key, _ := rsa.GenerateKey(rand.Reader, 2048)
@@ -494,6 +495,11 @@ func TestAdminConsole(t *testing.T) {
 	e.expect(login, 200, "")
 	if c := login.Header.Get("Set-Cookie"); !strings.Contains(c, "HttpOnly") || !strings.Contains(c, "SameSite=Strict") {
 		t.Fatalf("cookie flags: %s", c)
+	}
+
+	// The console shows the server version in its sidebar.
+	if v := e.do(console, "GET", "/api/v1/admin/me", "", nil).str("version"); v != "v9.9.9-test" {
+		t.Fatalf("admin/me version: %q", v)
 	}
 
 	stats := e.do(console, "GET", "/api/v1/admin/stats", "", nil)

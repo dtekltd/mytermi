@@ -117,7 +117,7 @@ func (s *Server) handleAdminLogout(w http.ResponseWriter, r *http.Request, a *au
 }
 
 func (s *Server) handleAdminMe(w http.ResponseWriter, r *http.Request, a *authCtx) error {
-	writeJSON(w, http.StatusOK, map[string]any{"user": a.User})
+	writeJSON(w, http.StatusOK, map[string]any{"user": a.User, "version": s.Version})
 	return nil
 }
 

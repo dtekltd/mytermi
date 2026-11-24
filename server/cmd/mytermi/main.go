@@ -88,6 +88,7 @@ func serve() error {
 		if err != nil {
 			return err
 		}
+		srv.Version = version
 		mux := http.NewServeMux()
 		mux.Handle("/api/", srv.Routes())
 		mux.Handle("/console/", console.Handler())

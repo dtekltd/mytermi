@@ -31,11 +31,15 @@ export function Shell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const path = usePathname();
   const [user, setUser] = useState<User | null>(null);
+  const [version, setVersion] = useState("");
   const [menu, setMenu] = useState(false);
 
   useEffect(() => {
-    api<{ user: User }>("/me")
-      .then((r) => setUser(r.user))
+    api<{ user: User; version?: string }>("/me")
+      .then((r) => {
+        setUser(r.user);
+        setVersion(r.version ?? "");
+      })
       .catch((e) => {
         if (e instanceof ApiError && (e.status === 401 || e.status === 403)) router.replace("/login/");
       });
@@ -87,6 +91,11 @@ export function Shell({ children }: { children: ReactNode }) {
             <button onClick={logout} className="mt-1 text-xs text-dim hover:text-red-500">
               Sign out
             </button>
+            {version && (
+              <div className="mt-2 border-t border-line pt-2 font-mono text-[11px] text-dim" title="Server version">
+                Version {version}
+              </div>
+            )}
           </div>
         </aside>
         {menu && <div className="fixed inset-0 z-20 bg-black/40 lg:hidden" onClick={() => setMenu(false)} />}
