@@ -1,0 +1,146 @@
+# Builds the desktop apps and publishes them together as one GitHub Release:
+#   - Windows on a Windows runner (Flutter can only build Windows apps on Windows)
+#   - Linux on Ubuntu 22.04, so the build runs on Ubuntu 22.04 and newer
+#
+# The version comes from app/pubspec.yaml (`version: 1.2.3+4`).
+#   - Push a tag:   bump the version, commit, then
+#                   git tag v1.2.3 && git push origin v1.2.3   (must match pubspec)
+#   - Or by hand:   Actions -> Release -> Run workflow. The tag v<pubspec
+#                   version> is created on the selected branch's latest commit.
+#
+# Release assets:
+#   MyTermi-windows-x64-<version>.zip   unzip, run mytermi.exe
+#   mytermi_<version>_amd64.deb          sudo apt install ./mytermi_<version>_amd64.deb
+#   MyTermi-linux-x64-<version>.tar.gz   unpack, run ./mytermi
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: Default sync server baked into the build (empty = repository variable MYTERMI_API_URL, else https://mytermi.vanminhso.vn)
+        required: false
+
+permissions:
+  contents: write # create the tag and the release
+
+concurrency:
+  group: release-${{ github.ref_name }}
+
+env:
+  FLUTTER_VERSION: 3.47.9 # keep in sync with app/.fvmrc
+  API_URL: ${{ inputs.api_url || vars.MYTERMI_API_URL || 'https://mytermi.vanminhso.vn' }}
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read version from pubspec.yaml
+        id: read
+        run: |
+          v=$(sed -nE 's/^version:[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+)(\+[0-9]+)?[[:space:]]*$/v\1/p' app/pubspec.yaml | head -1)
+          [ -n "$v" ] || { echo "pubspec.yaml needs 'version: 1.2.3+4'"; exit 1; }
+          if [ "${{ github.event_name }}" = push ] && [ "${{ github.ref_name }}" != "$v" ]; then
+            echo "Tag ${{ github.ref_name }} doesn't match pubspec.yaml version $v"; exit 1
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+  windows:
+    needs: version
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: app
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter test
+      - name: Build
+        shell: pwsh
+        run: |
+          # Version and build number come from pubspec.yaml.
+          flutter build windows --release `
+            --dart-define=APP_ENV=prod --dart-define=API_URL=$env:API_URL
+          Compress-Archive -Force -Path build\windows\x64\runner\Release\* `
+            -DestinationPath "build\windows\MyTermi-windows-x64-$env:VERSION.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: app/build/windows/MyTermi-windows-x64-${{ env.VERSION }}.zip
+
+  linux:
+    needs: version
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: app
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libstdc++-12-dev libsecret-1-dev
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter test
+      - name: Build
+        run: |
+          flutter build linux --release \
+            --dart-define=APP_ENV=prod --dart-define=API_URL="$API_URL"
+          tool/package_linux.sh "$VERSION"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: |
+            app/build/linux/mytermi_*_amd64.deb
+            app/build/linux/MyTermi-linux-x64-*.tar.gz
+
+  publish:
+    needs: [version, windows, linux]
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          target_commitish: ${{ github.sha }}
+          name: MyTermi ${{ env.VERSION }}
+          generate_release_notes: true
+          files: dist/*
+          body: |
+            ## Windows
+            Download **MyTermi-windows-x64-${{ env.VERSION }}.zip**, unzip it anywhere and run `mytermi.exe`.
+            Windows may show a SmartScreen warning because the app isn't code-signed yet: choose *More info → Run anyway*.
+
+            ## Linux (Ubuntu 22.04 or newer, x64)
+            - **Ubuntu/Debian:** download the `.deb`, then `sudo apt install ./mytermi_*_amd64.deb`. MyTermi appears in the app menu.
+            - **Other distributions:** unpack **MyTermi-linux-x64-${{ env.VERSION }}.tar.gz** and run `./mytermi` (needs GTK 3 and libsecret).
+
+            Passwords and keys are stored in the system keyring (GNOME Keyring on Ubuntu).
+
+            Default sync server: `${{ env.API_URL }}` (change it in the app under Settings → Sign in / Create account → Sync server).

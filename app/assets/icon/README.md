@@ -7,7 +7,7 @@ A green `>_` prompt on the app's dark navy background.
 | `icon.svg` | iOS, plus the Android legacy (pre-8.0) icon. Full-bleed square, no transparency, because the OS applies the mask. |
 | `icon_background.svg`, `icon_foreground.svg` | Android adaptive icon layers. The glyph sits inside the safe zone. |
 | `icon_monochrome.svg` | Android 13+ themed icon. White, single-layer. |
-| `icon_desktop.svg` | Windows. Rounded tile with transparent corners. |
+| `icon_desktop.svg` | Windows and Linux. Rounded tile with transparent corners. |
 
 The PNGs next to the SVGs are generated. To change the icon, edit the SVGs, then run:
 

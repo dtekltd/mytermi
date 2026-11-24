@@ -34,16 +34,31 @@ run   [dev|prod|build] [android|windows] [extra flutter args...]   # Windows (ru
 - `run windows` starts the app on this PC. `run build windows` writes
   `build\windows\x64\runner\Release\` (the app folder: `mytermi.exe` plus its DLLs and `data\`) and
   `build\windows\MyTermi-windows-x64.zip`. To install, unzip anywhere and run `mytermi.exe`.
-- **Releases:** the GitHub Actions workflow `.github/workflows/windows.yml` builds the app and
-  publishes a GitHub Release with `MyTermi-windows-x64-<version>.zip`. Start it by pushing a tag
-  (`git tag v1.0.1 && git push origin v1.0.1`) or with **Run workflow** in the Actions tab (enter the
-  version; the tag is created for you). The build's default sync server is the `api_url` input, else
-  the repository variable `MYTERMI_API_URL`, else `https://mytermi.vanminhso.vn`.
+- **Releases:** the GitHub Actions workflow `.github/workflows/release.yml` builds the Windows and
+  Linux apps and publishes one GitHub Release with `MyTermi-windows-x64-<version>.zip`,
+  `mytermi_<version>_amd64.deb` and `MyTermi-linux-x64-<version>.tar.gz`. Start it by pushing a tag
+  that matches the pubspec version (`git tag v1.0.1 && git push origin v1.0.1`) or with **Run
+  workflow** in the Actions tab (the tag is created for you). The build's default sync server is the
+  `api_url` input, else the repository variable `MYTERMI_API_URL`, else `https://mytermi.vanminhso.vn`.
 - On desktop the terminal uses the mouse (drag to select, wheel to scroll, right click copies the
   selection or pastes, **Enter** copies the selection) and the keyboard: **Ctrl+Shift+C / Ctrl+Shift+V** copy and paste (plain
   Ctrl+C/V/A go to the shell), **Ctrl+= / Ctrl+- / Ctrl+0** change the font size. The on-screen
   extra-keys row is hidden.
 - Sign in with email works. Google and Apple sign-in are mobile-only.
+
+## Linux
+
+- Building needs Linux (x64) with the GTK and libsecret headers. On Ubuntu:
+  `sudo apt install clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev libsecret-1-dev`.
+- `run linux` starts the app on this desktop. `run build linux` writes
+  `build/linux/x64/release/bundle/` and packages it with `tool/package_linux.sh` as
+  `build/linux/mytermi_<version>_amd64.deb` (`sudo apt install ./mytermi_*.deb`: installs to
+  `/opt/mytermi`, adds `mytermi` to the PATH and an app-menu entry) and
+  `build/linux/MyTermi-linux-x64-<version>.tar.gz` (unpack, run `./mytermi`).
+- Release builds are made on Ubuntu 22.04, so they run on Ubuntu 22.04 and newer.
+- Passwords and keys go to the system keyring through the Secret Service API (GNOME Keyring on
+  Ubuntu, KWallet on KDE). Without one, the app shows how to fix it instead of starting.
+- Mouse and keyboard work as on Windows (see above).
 
 ## App icon
 
