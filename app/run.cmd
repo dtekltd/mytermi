@@ -49,7 +49,7 @@ goto :eof
 
 :parsed
 if /i "%PLATFORM%"=="ios" (
-  echo X iOS chi chay/build duoc tren macOS ^(can Xcode^).
+  echo X iOS can only be run/built on macOS ^(requires Xcode^).
   exit /b 1
 )
 
@@ -64,11 +64,11 @@ if not defined FVMSDK set "FVMSDK=%LOCALAPPDATA%\fvm"
 set "FVMSDK=%FVMSDK%\versions\%FVMVER%"
 if exist ".fvm\flutter_sdk\bin\flutter.bat" set "FVMSDK=%CD%\.fvm\flutter_sdk"
 if not exist "%FVMSDK%\bin\flutter.bat" (
-  echo ... Cai Flutter %FVMVER% qua FVM ^(lan dau^)
+  echo ... Installing Flutter %FVMVER% via FVM ^(first run^)
   call fvm install %FVMVER%
 )
 if not exist "%FVMSDK%\bin\flutter.bat" (
-  echo X Khong tim thay Flutter %FVMVER% cua FVM o %FVMSDK%
+  echo X FVM Flutter %FVMVER% not found at %FVMSDK%
   exit /b 1
 )
 set "PATH=%FVMSDK%\bin;%PATH%"
@@ -82,7 +82,7 @@ if errorlevel 1 (
       goto found
     )
   )
-  echo X Khong tim thay flutter ^(them vao PATH hoac dat FLUTTER_ROOT^).
+  echo X flutter not found ^(add it to PATH or set FLUTTER_ROOT^).
   exit /b 1
 )
 :found
@@ -90,6 +90,8 @@ if errorlevel 1 (
 set "ENV=prod"
 if /i "%MODE%"=="dev" set "ENV=dev"
 set "DEFINES=--dart-define=APP_ENV=%ENV%"
+rem Release builds default to the same server as the GitHub release builds.
+if not defined MYTERMI_API_URL if /i not "%MODE%"=="dev" set "MYTERMI_API_URL=https://mytermi.vanminhso.vn"
 if defined MYTERMI_API_URL set "DEFINES=%DEFINES% --dart-define=API_URL=%MYTERMI_API_URL%"
 if defined GOOGLE_SERVER_CLIENT_ID set "DEFINES=%DEFINES% --dart-define=GOOGLE_SERVER_CLIENT_ID=%GOOGLE_SERVER_CLIENT_ID%"
 
@@ -100,7 +102,7 @@ if /i "%MODE%"=="build" if /i "%PLATFORM%"=="windows" (
   powershell -NoProfile -Command "Compress-Archive -Force -Path build\windows\x64\runner\Release\* -DestinationPath build\windows\MyTermi-windows-x64.zip"
   if errorlevel 1 exit /b 1
   echo OK App: build\windows\x64\runner\Release\mytermi.exe
-  echo OK Zip: build\windows\MyTermi-windows-x64.zip  ^(giai nen roi chay mytermi.exe^)
+  echo OK Zip: build\windows\MyTermi-windows-x64.zip  ^(unzip, then run mytermi.exe^)
   exit /b 0
 )
 
@@ -123,11 +125,11 @@ if not defined HASDEV (
   set "DEVID="
   for /f "usebackq tokens=*" %%I in (`powershell -NoProfile -Command "$d = flutter devices --machine 2>$null | Out-String | ConvertFrom-Json | Where-Object { $_.targetPlatform -like 'android*' } | Sort-Object emulator; if ($d) { @($d)[0].id }"`) do set "DEVID=%%I"
   if not defined DEVID (
-    echo X Khong tim thay thiet bi Android nao dang ket noi.
-    echo   Cam dien thoai ^(bat USB debugging^) hoac mo emulator: flutter emulators --launch ^<id^>
+    echo X No connected Android device found.
+    echo   Plug in a phone ^(USB debugging on^) or start an emulator: flutter emulators --launch ^<id^>
     exit /b 1
   )
-  echo -^> Thiet bi: !DEVID!
+  echo -^> Device: !DEVID!
   set "EXTRA= -d !DEVID!%EXTRA%"
 )
 

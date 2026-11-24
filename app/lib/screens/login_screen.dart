@@ -171,7 +171,11 @@ class _LoginScreenState extends State<LoginScreen> {
           if (_configError != null)
             _Banner(
               text: _configError!,
-              action: TextButton(onPressed: _loadConfig, child: const Text('Retry')),
+              // No server yet: offer to set it here, not only via the small
+              // "Server: not set" link at the bottom.
+              action: _acct.serverUrl.isEmpty
+                  ? TextButton(onPressed: _editServer, child: const Text('Set server'))
+                  : TextButton(onPressed: _loadConfig, child: const Text('Retry')),
             ),
           if (cfg != null && !cfg.signupEnabled)
             const _Banner(text: 'The server isn\'t accepting new sign-ups right now. Existing accounts can still sign in.'),
