@@ -1,6 +1,6 @@
 name: xterm
 description: Vendored copy of xterm.dart 4.0.0 with MyTermi fixes (see README.md).
-version: 4.0.0+mytermi.4
+version: 4.0.0+mytermi.5
 homepage: https://github.com/TerminalStudio/xterm.dart
 publish_to: none
 

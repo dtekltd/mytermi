@@ -20,6 +20,10 @@ with these fixes on top:
 5. `lib/src/utils/circular_buffer.dart`: `trimStart` (used when `CSI 3 J` clears
    the scrollback, which `clear` sends) moves the absolute start index. Lines kept
    reporting their old index, so mouse selections were drawn rows below the text.
+6. `lib/src/core/buffer/line.dart`, `buffer.dart` (`getText`, used to copy): cells
+   never written to count as spaces when text follows them, so indentation drawn
+   with cursor moves (nano, vim, less, tmux) is copied; trailing blanks of each
+   line are dropped.
 
 Only `lib/` is kept. Drop this folder and go back to the pub.dev package once
 upstream ships these fixes.

@@ -331,11 +331,23 @@ class BufferLine with IndexedItem {
       to = _length;
     }
 
+    // mytermi: cells never written to (programs like nano, vim, less and tmux
+    // skip blanks by moving the cursor) count as spaces when text follows them,
+    // so copied indentation survives. Blanks at the end are dropped.
     final builder = StringBuffer();
+    var blanks = 0;
     for (var i = from; i < to; i++) {
       final codePoint = getCodePoint(i);
       final width = getWidth(i);
-      if (codePoint != 0 && i + width <= to) {
+      if (codePoint == 0) {
+        // The right half of a wide character is stored as an empty cell.
+        if (i == 0 || getWidth(i - 1) != 2) blanks++;
+        continue;
+      }
+      if (i + width <= to) {
+        for (; blanks > 0; blanks--) {
+          builder.writeCharCode(0x20);
+        }
         builder.writeCharCode(codePoint);
       }
     }

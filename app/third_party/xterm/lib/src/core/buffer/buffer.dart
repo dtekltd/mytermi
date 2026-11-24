@@ -563,7 +563,10 @@ class Buffer {
 
     range = range.normalized;
 
+    // mytermi: trailing spaces are dropped from each line (as other terminals
+    // do), but not where a long line wraps onto the next row.
     final builder = StringBuffer();
+    final current = StringBuffer();
 
     for (var segment in range.toSegments()) {
       if (segment.line < 0 || segment.line >= height) {
@@ -573,10 +576,13 @@ class Buffer {
       if (!(segment.line == range.begin.y ||
           segment.line == 0 ||
           line.isWrapped)) {
+        builder.write(current.toString().trimRight());
         builder.write("\n");
+        current.clear();
       }
-      builder.write(line.getText(segment.start, segment.end));
+      current.write(line.getText(segment.start, segment.end));
     }
+    builder.write(current.toString().trimRight());
 
     return builder.toString();
   }
