@@ -8,7 +8,7 @@
 # A tag whose commit did not change server/ since the previous tag (an app-only release)
 # builds nothing. Actions -> Server -> Run workflow builds and registers the chosen branch
 # without a tag (version from git describe, e.g. v1.2.5-1-gabc1234): tags v* also start the
-# Windows app release, which needs the pubspec version.
+# desktop app release (release.yml: Windows and Linux), which needs the pubspec version.
 #
 # The package must be public (Packages -> mytermi-server -> Package settings -> Change
 # visibility): shipyard and the servers pull it without credentials.
