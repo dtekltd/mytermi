@@ -26,6 +26,17 @@ docker compose up -d --build
 `MYTERMI_DEV=1`, the compose default, prints email codes to the server log instead of sending
 them. Use it only until SMTP works.
 
+## Container image
+
+Each server release is published as `ghcr.io/dtekltd/mytermi-server:<version>` (and `:latest`) by
+`.github/workflows/server.yml`. Use it instead of `build:` when you don't want to build on the
+server:
+
+```yaml
+  server:
+    image: ghcr.io/dtekltd/mytermi-server:latest
+```
+
 ## Binary
 
 ```sh

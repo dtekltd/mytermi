@@ -1,0 +1,152 @@
+# Server: tests on every change to server/, and for each version tag a container image on
+# GitHub Container Registry (ghcr.io/dtekltd/mytermi-server), optionally deployed by
+# shipyard. Runs on GitHub-hosted runners; no registry secret (GITHUB_TOKEN pushes).
+#
+#   push / pull request touching server/   test
+#   tag v1.2.3                             test -> image :v1.2.3 :latest -> register
+#
+# A tag whose commit did not change server/ since the previous tag (an app-only release)
+# builds nothing. Actions -> Server -> Run workflow builds and registers the chosen branch
+# without a tag (version from git describe, e.g. v1.2.5-1-gabc1234): tags v* also start the
+# Windows app release, which needs the pubspec version.
+#
+# The package must be public (Packages -> mytermi-server -> Package settings -> Change
+# visibility): shipyard and the servers pull it without credentials.
+#
+# Shipyard (optional; register is skipped while unset):
+#   vars.SHIPYARD_URL        e.g. https://shipyard.vanminhso.vn
+#   secrets.SHIPYARD_TOKEN   CI token of the project (Project -> CI tokens)
+name: Server
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths: ['server/**', '.github/workflows/server.yml']
+  pull_request:
+    paths: ['server/**', '.github/workflows/server.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: server-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_type != 'tag' }}
+
+env:
+  IMAGE: ghcr.io/dtekltd/mytermi-server
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine # the oldest Postgres in production
+        env:
+          POSTGRES_PASSWORD: mytermi
+          POSTGRES_DB: mytermi_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 3s --health-timeout 3s --health-retries 20
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/console/package-lock.json
+      - run: make console
+      - run: go vet ./...
+      - run: go test -p 1 ./...
+        env:
+          MYTERMI_TEST_DATABASE_URL: postgres://postgres:mytermi@127.0.0.1:5432/mytermi_test?sslmode=disable
+
+  image:
+    needs: test
+    if: (github.ref_type == 'tag' && startsWith(github.ref_name, 'v')) || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+      version: ${{ steps.changed.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # previous tag
+
+      - id: changed
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          version=$(git describe --tags --match 'v*' 2>/dev/null || git rev-parse --short=12 HEAD)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          prev=$(git describe --tags --abbrev=0 --match 'v*' HEAD^ 2>/dev/null || true)
+          if [ "$EVENT" = workflow_dispatch ] || [ -z "$prev" ] || ! git diff --quiet "$prev" HEAD -- server; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+            echo "building: server/ changed since ${prev:-the first commit} (or run by hand)"
+          else
+            echo "::notice::server/ unchanged since $prev: no new server image for $version"
+          fi
+
+      - uses: docker/login-action@v3
+        if: steps.changed.outputs.build == 'true'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+        if: steps.changed.outputs.build == 'true'
+
+      - id: build
+        if: steps.changed.outputs.build == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: server
+          push: true
+          provenance: false
+          build-args: VERSION=${{ steps.changed.outputs.version }}
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.changed.outputs.version }}
+            ${{ env.IMAGE }}:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.changed.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.licenses=Apache-2.0
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  register:
+    name: register with shipyard
+    needs: image
+    if: needs.image.outputs.digest != '' && vars.SHIPYARD_URL != ''
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          SHIPYARD_URL: ${{ vars.SHIPYARD_URL }}
+          SHIPYARD_TOKEN: ${{ secrets.SHIPYARD_TOKEN }}
+          DIGEST: ${{ needs.image.outputs.digest }}
+          VERSION: ${{ needs.image.outputs.version }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          # jq builds the JSON so commit messages with quotes are safe.
+          body=$(jq -n --arg sha "$GITHUB_SHA" --arg ref "$GITHUB_REF" --arg msg "${COMMIT_MESSAGE%%$'\n'*}" \
+            --arg img "$IMAGE" --arg d "$DIGEST" --arg v "$VERSION" \
+            '{git_sha: $sha, git_ref: $ref, version: $v, commit_message: $msg,
+              images: [{component: "server", image_ref: $img, digest: $d}]}')
+          curl --fail-with-body -sS -X POST "$SHIPYARD_URL/api/v1/hooks/releases" \
+            -H "Authorization: Bearer $SHIPYARD_TOKEN" -H "Content-Type: application/json" \
+            --retry 3 --retry-all-errors -d "$body"
